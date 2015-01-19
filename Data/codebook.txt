@@ -1,0 +1,91 @@
+
+----------------------------------------------------------------------------
+Codebook for Na+ project
+----------------------------------------------------------------------------
+
+TO: Philip + Student
+FROM: Andrew + Crystal
+RE: Na+ & Mortality
+----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+
+VARIABLE NAME : Description
+----------------------------------------------------------------------------
+country: 3-6 alpha string, country ID as used by HMD (mortality data source)
+
+countrycode: 3 alpha string, ISO country code as used by PWT (econmomics data source) 
+
+e0_M: males, life expectancy at age 30.  From HMD.  
+
+e0_F: same as e0_M but for females
+
+year: 1990 or 2010
+
+pwt_year: 1990 or 1992 or 2008-2010.  Explanation as follows.  The
+	  year variable refers to the year of the Na+ data, which is
+	  always exactly 1990 or 2010.  The mortality data is a
+	  nearest-match year.  One country does not have mortality
+	  data going back to 1990, so we use 1992 as a drop-in
+	  replacement.  Thirteen countries do not have mortality data
+	  going up to 2010, so we use 2008 (1) or 2009 (12) as a
+	  drop-in replacement.  One country has mortality data going
+	  up to 2005, only, and this country has been excluded from
+	  the later period.  The economics data are always matched,
+	  year-wise, to the mortality data.  So, for example, if in a
+	  country, we have Na+ data from 2010, but we are using
+	  mortality from 2009 because 2010 mortality data are not 
+          released yet, then we also use 2009 economic data, to match
+	  the mortality data.
+
+Na_M: Age-standardised estimated sodium intakes (g/day) from 1990 and
+      2010, males aged 20 and over.  From Powles (2013).
+
+Na_F: Same as Na_M, but for females.
+
+etohboth: 1990 only.  Alcohol consumption per capita per year.  Litres
+          of pure EtOH.  Both sexes, 15+.  From WHO.  
+
+etohM: 2010 only.   Alcohol consumption per capita per year.  Litres
+          of pure EtOH.  Males, 15+.  From WHO.  
+
+etohF: Same as etohM, but for females.
+
+{all social + economic variables below are from the PWT}
+
+pc_gdp: rgdpe/pop [q.v.]
+
+pop: population (in millions)
+
+rgdpe: Expenditure-side real GDP at chained PPPs (in mil. 2005US$)
+
+non_2010_data: dummy variable. =1 if year=2010 but pwt_year =/= 2010. 
+               ignore if year=1990.
+
+country_name_p: Full country name string (some with embedded spaces)
+
+emp: Number of persons engaged [i.e. in the workforce] (in millions)
+
+avh: Average annual hours worked by persons engaged
+
+hc: Human capital index, based on years of schooling (Barro/Lee, 2010)
+    and returns...
+
+cgdpe: Expenditure-side real GDP at current PPPs (in mil. 2005US$)
+
+cgdpo: Output-side real GDP at current PPPs (in mil. 2005US$)
+
+ck: Capital stock at current PPPs (in mil. 2005US$)
+
+ctfp: TFP [Total factor productivity] level at current PPPs (USA=1)
+
+rgdpna: Real GDP at constant 2005 national prices (in mil. 2005US$)
+
+rkna: Capital stock at constant 2005 national prices (in mil. 2005US$)
+
+tfpna: TFP at constant national prices (2005=1)
+
+labsh: Share of labour compensation in GDP at current national prices
+
+sqrt_pc_gdp: sqrt(pc_gdp)
+
+log_pc_gdp: natural log(pc_gdp)
