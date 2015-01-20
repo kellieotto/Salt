@@ -3,7 +3,9 @@
 \usepackage{graphicx}
 
 \begin{document}
-\let\thefootnote\relax\footnotetext{Last edited January 17, 2015 by KO}
+\let\thefootnote\relax\footnotetext{Last edited January 19, 2015 by KO}
+
+\section{Sodium consumption and life expectancy}
 
 Summary of the data preprocessing:
 \begin{itemize}
@@ -15,20 +17,41 @@ Summary of the data preprocessing:
 
 We tested the hypothesis of association between sodium intake and excess mortality.  In our dataset, ``excess mortality'' is signified by a decrease in life expectancy from 1990 to 2010 beyond what would be expected given all other characteristics of a country.  We measured this by modeling the change in life expectancy using all the other available variables, including alcohol consumption, population, real GDP, and other economic and social variables.  For our dataset, we tried several predictive models and found that ordinary linear regression on all the variables gave the smallest within-sample mean square error.  The residuals from this model represent the change in life expectancy not explained by the measured variables. \\
 
-We measured the strength of the association between sodium intake and the residuals from the model using Pearson's correlation. We tested the significance of the association using a permutation test.  Under the null hypothesis of no association, the residuals of the model are exchangeable: if sodium intake has no effect on mortality, then the residuals are equally likely to be paired with any of the sodium measurements.  Under the alternative hypothesis, our model will tend to \textit{overestimate} the increase in life expectancy from 1990 to 2010 in countries where sodium intake increased and to \textit{underestimate} the change in life expectancy in countries where sodium intake decreased. This alternative corresponds to a significant positive correlation between the residuals and change in sodium intake.  The correlation for males was $-0.1288$ (one-sided p-value $0.7796$, two-sided p-value $0.4471$) and the correlation for females was $-0.08257$ (one-sided p-value $0.6857$, two-sided p-value $0.6298$). We conclude there is insufficient evidence to reject the null hypothesis that the correlation is $0$. \\
+We measured the strength of the association between sodium intake and the residuals from the model using Pearson's correlation. We tested the significance of the association using a permutation test.  Under the null hypothesis of no association, the residuals of the model are exchangeable: if sodium intake has no effect on mortality, then the residuals are equally likely to be paired with any of the sodium measurements.  Under the alternative hypothesis, our model will tend to \textit{overestimate} the increase in life expectancy from 1990 to 2010 in countries where sodium intake increased and to \textit{underestimate} the change in life expectancy in countries where sodium intake decreased. This alternative corresponds to a significant positive correlation between the residuals and change in sodium intake.  The correlation for males was $-0.1288$ (one-sided p-value $0.7796$, two-sided p-value $0.4471$) and the correlation for females was $-0.08257$ (one-sided p-value $0.6857$, two-sided p-value $0.6298$) (Figure~\ref{fig:sodium_excessmortality}). We conclude there is insufficient evidence to reject the null hypothesis that the correlation is $0$. \\
 
-We obtained approximate confidence intervals for the estimates by inverting the permutation test.  The endpoints were computed by shifting the entire permutation distribution up to the smallest amount for which we would reject the null hypothesis. (still unsure of the justification for this) The two-sided $95\%$ confidence interval for the correlation for males was $(-0.5888, 0.0862)$ and for females was $(-0.4976, 0.1774)$.
+We obtained approximate confidence intervals for the estimates by inverting the permutation test.  The endpoints were computed by shifting the entire permutation distribution up to the smallest amount for which we would reject the null hypothesis. (still unsure of the justification for this) The two-sided $95\%$ confidence interval for the correlation for males was $(-0.5888, 0.0862)$ and for females was $(-0.4976, 0.1774)$ (Figure~\ref{fig:sodium_CI}).
 
 
 \begin{figure}
 \centering
-\includegraphics[width = \textwidth]{sodium_lifeexp.pdf}
-\caption{Scatterplot of change in sodium intake against change in life expectancy at age 30 from 1990 to 2010. Even before correcting for the effect of other social and economic factors, there is no obvious association between sodium and life expectancy.}
+\includegraphics[width = \textwidth]{sodium_exmort.pdf}
+\caption{Scatterplot of change in sodium intake against change in life expectancy at age 30 from 1990 to 2010. Even before correcting for the effect of other social and economic factors, there is no obvious association between sodium and life expectancy.}\label{fig:sodium_excessmortality}
 \end{figure}
 \begin{figure}
 \centering
 \includegraphics[width = \textwidth]{permdistribution.pdf}
-\caption{Permutation distribution of Pearson correlation between change in sodium intake and the residuals from the model predicting change in life expectancy from all other variables. The solid line is the estimated correlation and the dotted lines are the confidence interval endpoints.}
+\caption{Permutation distribution of Pearson correlation between change in sodium intake and the residuals from the model predicting change in life expectancy from all other variables. The solid line is the estimated correlation and the dotted lines are the confidence interval endpoints.}\label{fig:sodium_CI}
 \end{figure}
 
+
+
+\section{Ethanol consumption and life expectancy}
+We repeated the analysis, switching the roles of sodium and ethanol.  Data preprocessing was identical to that of the first analysis, except that we additionally removed Taiwan from the analysis because of missing ethanol consumption measurements in both 1990 and 2010.  \\
+
+We predicted change in life expectancy from 1990 to 2010 using the change in all other social and economic variables, including sodium consumption.  The ``best fit'' models were a generalized additive model for males and a linear regression with second-order terms for females.  We carried out the same permutation procedure to test the association between change in ethanol consumption and excess mortality.  The correlation for males was $0.2786$ (one-sided p-value $0.0426$, two-sided p-value $0.1076$) and the correlation for females was $0.1092$ (one-sided p-value $0.2716$, two-sided p-value $0.0.5367$) (Figure~\ref{fig:etoh_excessmortality}). Using the same permutation shift procedure as the first analysis, the two-sided $95\%$ confidence interval for the correlation for males was $(0.2336, 0.9286)$ and for females was $(-0.1208, 0.5592)$ (Figure~\ref{fig:etoh_CI}). \\
+
+We conclude at the $0.05$ significance level that there is a significant positive association between excess mortality and ethanol consumption in males.  That is, the change in alcohol consumption from 1990 to 2010 helps predict the change in life expectancy over the same time period.  Omitting alcohol as a predictor leads one to overestimate the change in life expectancy.  There is insufficient evidence to reject the null hypothesis that the correlation for females is $0$. \\
+
+
+
+\begin{figure}
+\centering
+\includegraphics[width = \textwidth]{etoh_exmort.pdf}
+\caption{Scatterplot of change in ethanol intake against excess mortality beyond the modeled predictions.}\label{fig:etoh_excessmortality}
+\end{figure}
+\begin{figure}
+\centering
+\includegraphics[width = \textwidth]{permdistribution_etoh.pdf}
+\caption{Permutation distribution of Pearson correlation between change in ethanol intake and the residuals from the model predicting change in life expectancy from all other variables. The estimated correlation and confidence interval endpoints are displayed.}\label{fig:etoh_CI}
+\end{figure}
 \end{document}
