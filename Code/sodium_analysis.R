@@ -1,4 +1,4 @@
-### Last edited: January 19, 2015
+### Last edited: February 2, 2015
 ### Kellie Ottoboni
 ### Test for association between change in Na+ consumption and change in life expectancy, from 1990 to 2010
 
@@ -10,8 +10,10 @@ salt <- read.table("omnibus_data.csv", sep = "\t", header = TRUE)
 
 
 ### Clean up data, impute missing predictors within each year
-salt$alcohol_M <- ifelse(is.na(salt$etohM), salt$etohboth, salt$etohM)
-salt$alcohol_F <- ifelse(is.na(salt$etohF), salt$etohboth, salt$etohF)
+#salt$alcohol_M <- ifelse(is.na(salt$etohM), salt$etohboth, salt$etohM) # unacceptable
+#salt$alcohol_F <- ifelse(is.na(salt$etohF), salt$etohboth, salt$etohF) # unacceptable
+salt$etohboth <-  ifelse(is.na(salt$etohboth), 0.5*(salt$etohM + salt$etohF), salt$etohboth)
+salt <- mutate(salt, alcohol_M = etohboth, alcohol_F = etohboth) # If we decide to keep this measure of alcohol consuption, I should change the rest of the file (remove alcohol_M and alcohol_F, just use etohboth throughout.)
 
 salt <- arrange(salt, country, year)
 salt_filt <- select(salt, country, e0_M:rgdpe,emp:alcohol_F)
@@ -51,16 +53,16 @@ colnames(female) <- gsub("_F", "", colnames(female))
 
 ### Modeling step - test a bunch of different models and pick the one with the best in-sample fit
 
-#source("../Code/perm_tests.R")
+source("../Code/modeling.R")
 
-# need to eventually get rid of this
-library(rpart)
-library(ipred)
-library(randomForest)
-library(e1071)
-library(gam)
-library(gbm)
-library(nnet)
+# # need to eventually get rid of this
+# library(rpart)
+# library(ipred)
+# library(randomForest)
+# library(e1071)
+# library(gam)
+# library(gbm)
+# library(nnet)
 
 library(devtools); install_github("kellieotto/ModelMatch/ModelMatch"); library(ModelMatch)
 mod_M <- choose_model(male)
