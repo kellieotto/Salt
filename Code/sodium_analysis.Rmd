@@ -1,16 +1,23 @@
-### Last edited: February 2, 2015
-### Kellie Ottoboni
 ### Test for association between change in Na+ consumption and change in life expectancy, from 1990 to 2010
+Last edited: February 9, 2015
+Kellie Ottoboni
 
+```{r knitr_options, include=FALSE}
+library(knitr)
+opts_chunk$set(fig.width=12, fig.height=4, fig.path='RmdFigs/',
+               warning=FALSE, message=FALSE)
+# install R/qtl package if necessary:
+if(!require("ModelMatch")){library(devtools); install_github("kellieotto/ModelMatch/ModelMatch")}
+```
+
+```{r load_data}
 library(dplyr)
 library(Hmisc)
+salt <- read.table("../Data/omnibus_data.csv", sep = "\t", header = TRUE)
+```
 
-setwd("../Data")
-salt <- read.table("omnibus_data.csv", sep = "\t", header = TRUE)
-
-
-### Clean up data, impute missing predictors within each year
-
+We need to clean up the data. This includes imputing the missing values of the predictors:
+```{r impute}
 salt$etohboth <- ifelse(is.na(salt$etohboth), 0.5*(salt$etohM + salt$etohF), salt$etohboth)
 
 salt <- arrange(salt, country, year)
@@ -29,9 +36,10 @@ twn <- which(is.na(salt1990$etohboth))
 salt1990[twn, "etohboth"] <- predict(etohboth_mod, salt1990[twn,])
 salt1990$etohM     <- salt1990$etohboth * (salt2010$etohM)/(0.5*salt2010$etohM+0.5*salt2010$etohF)
 salt1990$etohF     <- salt1990$etohboth * (salt2010$etohF)/(0.5*salt2010$etohM+0.5*salt2010$etohF)
+```
 
-
-### Take difference between 2010 and 1990, split into male and female.
+We take the difference between predictors, outcome, and treatment in 2010 and 1990, then split the data into male and female sets.
+```{r malefemale}
 countries <- salt2010$country
 salt_diff <- salt2010[,-1]-salt1990[,-1]
 salt_diff <- cbind(countries, salt_diff)
@@ -43,45 +51,54 @@ colnames(male) <- gsub("_M", "", colnames(male))
 female <- select(salt_diff, -countries, -e0_M, -year, -Na_M, -Na_F, -etohM, -etohboth)
 female_Na <- salt_diff$Na_F
 colnames(female) <- gsub("_F", "", colnames(female))
+```
 
 
 
+### Modeling step 
 
-### Modeling step - test a bunch of different models and pick the one with the best in-sample fit
+We will test a bunch of different models and pick the one with the best in-sample fit. We start by loading in the model-selection function. Then, we carry out model selection on the male data and female data to generate predictions.
 
+We try fitting several models to the data: linear models, tree methods, etc., and we tune the parameters of each model using bootstrapping (all this is done using the `train` function). Finally, we choose the model with the lowest in-sample prediction error.
+
+```{r modeling}
 source("../Code/modeling.R")
-library(devtools); install_github("kellieotto/ModelMatch/ModelMatch"); library(ModelMatch)
 mod_M <- choose_model(male)
 pred_M <- predict(mod_M, male)
 mod_F <- choose_model(female)
 pred_F <- predict(mod_F, female)
-
+```
 
 ### Permutation test
+We need to import the ModelMatch library to carry out the inference.
 
+```{r modelmatch}
+library(ModelMatch)
+```
 
+Now we'll conduct permutation tests for the correlation between treatment (sodium consumption) and residuals for the response predicted on all variables besides treatment (predicted - true 30-year life expectancy).
+```{r permtest}
 res_M <- permu_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 10000)
 res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 10000)
+```
 
+### Confidence intervals 
 
-### Confidence intervals - by inverting the permutation test
-
-
-
-ci_M <- permu_CI_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 10000, side = "both", verbosity = TRUE)
-ci_F <- permu_CI_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 10000, side = "both", verbosity = TRUE)
+```{r confint}
+ci_M <- permu_CI_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 1000, side = "both", verbosity = F)
+ci_F <- permu_CI_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 1000, side = "both", verbosity = F)
 
 cat("MALE:\n", "Estimate:", res_M$estimate, "\nP-value", res_M$pvalue, "\nConfidence Interval", ci_M)
 cat("FEMALE:\n", "Estimate:", res_F$estimate, "\nP-value", res_F$pvalue, "\nConfidence Interval", ci_F)
 
+```
 
 
 
 ### Plots
+```{r plots}
 library(ggplot2)
-setwd("../Analysis")
 
-pdf("sodium_lifeexp.pdf")
 dat <- data.frame("sex"     = c(rep("Male",nrow(male)), rep("Female",nrow(female))),
                   "sodium"  = as.numeric(c(male_Na, female_Na)),
                   "le"      = c(male$e0, female$e0),
@@ -89,10 +106,7 @@ dat <- data.frame("sex"     = c(rep("Male",nrow(male)), rep("Female",nrow(female
                   "ex_mort" = c(pred_M-male$e0, pred_F-female$e0),
                   stringsAsFactors = FALSE)
 qplot(sodium, le, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Sodium (g/day)")), y = expression(paste(Delta, " Life Expectancy (years)")), title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(le<0,paste(country),"")) , hjust=-0.2, size = 3.5)
-dev.off()
 
-
-pdf("permdistribution.pdf")
 dat2 <- data.frame("sex"     = c(rep("Male",length(res_M$distr)), rep("Female",length(res_F$distr))),
                   "distr"  = as.numeric(c(res_M$distr, res_F$distr)),
                   stringsAsFactors = FALSE)
@@ -101,13 +115,14 @@ vline.dat <- data.frame("sex" = c(rep("Male",3), rep("Female",3)),
                         "lty"   = rep(c("dashed", "dotted", "dotted"), 2),
 stringsAsFactors = FALSE)
 qplot(distr, data = dat2, geom = "histogram", facets = sex~., colour = sex, fill = sex) + geom_vline(aes(xintercept=vline, linetype=lty), data = vline.dat, show_guide = TRUE, color="black")+ theme(legend.position = "none") + labs(x = "Pearson Correlation", y = "", title = "Permutation Distribution")
-dev.off()
 
-pdf("sodium_exmort.pdf")
 qplot(sodium, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Sodium (g/day)")), y = "Excess Mortality (years)", title = "Change in Sodium") + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=-0.2, size = 3.5)
-dev.off()
 
-pdf("lifeex_exmort.pdf")
 qplot(le, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Life Expectancy (years)")), y = "Excess Mortality (years)", title = "Change in Life Expectancy")  + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=1.1, size = 3.5)
-dev.off()
+```
+
+### R and package versions used
+```{r sessionInfo, include=TRUE, echo=TRUE, results='markup'}
+sessionInfo()
+```
 
