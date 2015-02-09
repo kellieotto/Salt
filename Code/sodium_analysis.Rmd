@@ -16,7 +16,7 @@ library(Hmisc)
 salt <- read.table("../Data/omnibus_data.csv", sep = "\t", header = TRUE)
 ```
 
-We need to clean up the data. This includes imputing the missing values of the predictors:
+We need to clean up the data. This includes removing unwanted variables (we keep pc_gdp and etoh only) and imputing the missing values of the predictors:
 ```{r impute}
 salt$etohboth <- ifelse(is.na(salt$etohboth), 0.5*(salt$etohM + salt$etohF), salt$etohboth)
 
@@ -59,7 +59,7 @@ colnames(female) <- gsub("_F", "", colnames(female))
 
 We will test a bunch of different models and pick the one with the best in-sample fit. We start by loading in the model-selection function. Then, we carry out model selection on the male data and female data to generate predictions.
 
-We try fitting several models to the data: linear models, tree methods, etc., and we tune the parameters of each model using bootstrapping (all this is done using the `train` function). Finally, we choose the model with the lowest in-sample prediction error.
+We try fitting several models to the data: linear models, tree methods, etc., and we tune the parameters of each model using bootstrapping (all this is done using the `train` function). Finally, we choose the model with the lowest in-sample prediction error (measured as MSE here).
 
 ```{r modeling}
 source("../Code/modeling.R")
@@ -70,26 +70,23 @@ pred_F <- predict(mod_F, female)
 ```
 
 ### Permutation test
-We need to import the ModelMatch library to carry out the inference.
+We need to import [the ModelMatch library](https://github.com/kellieotto/ModelMatch) to carry out the inference.
 
 ```{r modelmatch}
 library(ModelMatch)
 ```
 
-Now we'll conduct permutation tests for the correlation between treatment (sodium consumption) and residuals for the response predicted on all variables besides treatment (predicted - true 30-year life expectancy).
+Using `ModelMatch` we'll conduct permutation tests for the correlation between treatment (change in sodium consumption) and residuals for the response predicted on all variables besides treatment (predicted - true change in 30-year life expectancy).
 ```{r permtest}
 res_M <- permu_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 10000)
 res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 10000)
 ```
 
-### Confidence intervals 
+### Results
 
 ```{r confint}
-ci_M <- permu_CI_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 1000, side = "both", verbosity = F)
-ci_F <- permu_CI_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 1000, side = "both", verbosity = F)
-
-cat("MALE:\n", "Estimate:", res_M$estimate, "\nP-value", res_M$pvalue, "\nConfidence Interval", ci_M)
-cat("FEMALE:\n", "Estimate:", res_F$estimate, "\nP-value", res_F$pvalue, "\nConfidence Interval", ci_F)
+cat("MALE:\n", "Estimate:", res_M$estimate, "\nP-value", res_M$pvalue)
+cat("FEMALE:\n", "Estimate:", res_F$estimate, "\nP-value", res_F$pvalue)
 
 ```
 
@@ -106,15 +103,6 @@ dat <- data.frame("sex"     = c(rep("Male",nrow(male)), rep("Female",nrow(female
                   "ex_mort" = c(pred_M-male$e0, pred_F-female$e0),
                   stringsAsFactors = FALSE)
 qplot(sodium, le, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Sodium (g/day)")), y = expression(paste(Delta, " Life Expectancy (years)")), title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(le<0,paste(country),"")) , hjust=-0.2, size = 3.5)
-
-dat2 <- data.frame("sex"     = c(rep("Male",length(res_M$distr)), rep("Female",length(res_F$distr))),
-                  "distr"  = as.numeric(c(res_M$distr, res_F$distr)),
-                  stringsAsFactors = FALSE)
-vline.dat <- data.frame("sex" = c(rep("Male",3), rep("Female",3)),
-                        "vline"  = as.numeric(c(res_M$estimate, ci_M, res_F$estimate, ci_F)),
-                        "lty"   = rep(c("dashed", "dotted", "dotted"), 2),
-stringsAsFactors = FALSE)
-qplot(distr, data = dat2, geom = "histogram", facets = sex~., colour = sex, fill = sex) + geom_vline(aes(xintercept=vline, linetype=lty), data = vline.dat, show_guide = TRUE, color="black")+ theme(legend.position = "none") + labs(x = "Pearson Correlation", y = "", title = "Permutation Distribution")
 
 qplot(sodium, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Sodium (g/day)")), y = "Excess Mortality (years)", title = "Change in Sodium") + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=-0.2, size = 3.5)
 
