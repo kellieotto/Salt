@@ -86,6 +86,10 @@ tfpna: TFP at constant national prices (2005=1)
 
 labsh: Share of labour compensation in GDP at current national prices
 
+popF: Population of females >=15yo. Note the figure matches the year of the mortality data
+
+popM: Same as popM, but for males.
+
 sqrt_pc_gdp: sqrt(pc_gdp)
 
 log_pc_gdp: natural log(pc_gdp)
