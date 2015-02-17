@@ -1,4 +1,4 @@
-### Last edited: February 2, 2015
+### Last edited: February 16, 2015
 ### Kellie Ottoboni
 ### Test for association between change in Na+ consumption and change in life expectancy, from 1990 to 2010
 
@@ -10,25 +10,26 @@ salt <- read.table("omnibus_data.csv", sep = "\t", header = TRUE)
 
 
 ### Clean up data, impute missing predictors within each year
-
-salt$etohboth <- ifelse(is.na(salt$etohboth), 0.5*(salt$etohM + salt$etohF), salt$etohboth)
+salt <- mutate(salt, popF_prop = popF/(popF + popM), popM_prop = popM/(popF + popM))
+salt$popF_prop[is.na(salt$popF)] <- 0.5; salt$popM_prop[is.na(salt$popM)] <- 0.5
+salt$etohboth <- ifelse(is.na(salt$etohboth), salt$popM_prop*salt$etohM + salt$popF_prop*salt$etohF, salt$etohboth)
 
 salt <- arrange(salt, country, year)
-salt_filt <- select(salt, country, e0_M, e0_F, year, Na_M, Na_F, etohboth, etohM, etohF, pc_gdp)
+salt_filt <- dplyr::select(salt, country, e0_M, e0_F, year, Na_M, Na_F, etohboth, etohM, etohF, pc_gdp, popM_prop, popF_prop)
 
 salt2010           <- filter(salt_filt, year == 2010)
 etohM_mod <- lm(etohM~ e0_M + e0_F + Na_M + Na_F + pc_gdp, data = salt2010)
 etohF_mod <- lm(etohF~ e0_M + e0_F + Na_M + Na_F + pc_gdp, data = salt2010)
 twn <- which(is.na(salt2010$etohM))
 salt2010[twn, "etohM"] <- predict(etohM_mod, salt2010[twn,]); salt2010[twn, "etohF"] <- predict(etohF_mod, salt2010[twn,])
-salt2010[twn, "etohboth"] <- 0.5*(salt2010$etohM + salt2010$etohF)[twn]
+salt2010[twn, "etohboth"] <- (salt2010$popM_prop*salt2010$etohM + salt2010$popF_prop*salt2010$etohF)[twn]
 
 salt1990           <- filter(salt_filt, year == 1990)
 etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp, data = salt1990)
 twn <- which(is.na(salt1990$etohboth))
 salt1990[twn, "etohboth"] <- predict(etohboth_mod, salt1990[twn,])
-salt1990$etohM     <- salt1990$etohboth * (salt2010$etohM)/(0.5*salt2010$etohM+0.5*salt2010$etohF)
-salt1990$etohF     <- salt1990$etohboth * (salt2010$etohF)/(0.5*salt2010$etohM+0.5*salt2010$etohF)
+salt1990$etohM     <- salt1990$etohboth * (salt2010$etohM)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
+salt1990$etohF     <- salt1990$etohboth * (salt2010$etohF)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
 
 
 ### Take difference between 2010 and 1990, split into male and female.
@@ -37,10 +38,10 @@ salt_diff <- salt2010[,-1]-salt1990[,-1]
 salt_diff <- cbind(countries, salt_diff)
 salt_diff <- filter(salt_diff, !is.na(e0_M))
 
-male <- select(salt_diff, -countries, -e0_F, -year, -Na_F, -Na_M, -etohF, -etohboth)
+male <- dplyr::select(salt_diff, -countries, -e0_F, -year, -Na_F, -Na_M, -etohF, -etohboth)
 male_Na <- salt_diff$Na_M
 colnames(male) <- gsub("_M", "", colnames(male))
-female <- select(salt_diff, -countries, -e0_M, -year, -Na_M, -Na_F, -etohM, -etohboth)
+female <- dplyr::select(salt_diff, -countries, -e0_M, -year, -Na_M, -Na_F, -etohM, -etohboth)
 female_Na <- salt_diff$Na_F
 colnames(female) <- gsub("_F", "", colnames(female))
 
@@ -71,9 +72,9 @@ res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = fe
 ci_M <- permu_CI_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 10000, side = "both", verbosity = TRUE)
 ci_F <- permu_CI_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 10000, side = "both", verbosity = TRUE)
 
-cat("MALE:\n", "Estimate:", res_M$estimate, "\nP-value", res_M$pvalue, "\nConfidence Interval", ci_M)
-cat("FEMALE:\n", "Estimate:", res_F$estimate, "\nP-value", res_F$pvalue, "\nConfidence Interval", ci_F)
-
+res_table <- data.frame(rbind(c(res_M$estimate, res_M$pvalue, ci_M), c(res_F$estimate, res_F$pvalue, ci_F)))
+rownames(res_table) <- c("Male", "Female"); colnames(res_table) <- c("Estimate", "Upper p", "Lower p", "Two-sided p", "Lower CI", "Upper CI")
+print(res_table)
 
 
 
