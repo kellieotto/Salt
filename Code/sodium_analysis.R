@@ -2,6 +2,7 @@
 ### Kellie Ottoboni
 ### Test for association between change in Na+ consumption and change in life expectancy, from 1990 to 2010
 
+set.seed(38)
 library(dplyr)
 library(Hmisc)
 

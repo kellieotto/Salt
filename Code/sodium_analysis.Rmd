@@ -12,6 +12,7 @@ if(!require("ModelMatch")){library(devtools); install_github("kellieotto/ModelMa
 ```
 
 ```{r load_data}
+set.seed(38)
 library(dplyr)
 library(Hmisc)
 salt <- read.table("../Data/omnibus_data.csv", sep = "\t", header = TRUE)
@@ -109,12 +110,30 @@ dat <- data.frame("sex"     = c(rep("Male",nrow(male)), rep("Female",nrow(female
                   "country" = rep(salt_diff$countries, 2),
                   "ex_mort" = c(pred_M-male$e0, pred_F-female$e0),
                   stringsAsFactors = FALSE)
-qplot(sodium, le, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Sodium (g/day)")), y = expression(paste(Delta, " Life Expectancy (years)")), title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(le<0,paste(country),"")) , hjust=-0.2, size = 3.5)
+p1 <- qplot(sodium, le, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Sodium (g/day)")), y = expression(paste(Delta, " Life Expectancy (years)")), title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(le<0,paste(country),"")) , hjust=-0.2, size = 3.5)
+p1
 
-qplot(sodium, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Sodium (g/day)")), y = "Excess Mortality (years)", title = "Change in Sodium") + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=-0.2, size = 3.5)
+p2 <- qplot(sodium, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Sodium (g/day)")), y = "Excess Mortality (years)", title = "Change in Sodium") + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=-0.2, size = 3.5)
+p2
 
-qplot(le, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Life Expectancy (years)")), y = "Excess Mortality (years)", title = "Change in Life Expectancy")  + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=1.1, size = 3.5)
+p3 <- qplot(le, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Life Expectancy (years)")), y = "Excess Mortality (years)", title = "Change in Life Expectancy")  + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=1.1, size = 3.5)
+p3
 ```
+
+
+```{r renderplots, echo=FALSE}
+pdf("../Analysis/sodium_lifeexp.pdf")
+p1
+dev.off()
+pdf("../Analysis/sodium_exmort.pdf")
+p2
+dev.off()
+pdf("../Analysis/lifeex_exmort.pdf")
+p3
+dev.off()
+```
+
+
 
 ### R and package versions used
 ```{r sessionInfo, include=TRUE, echo=TRUE, results='markup'}
