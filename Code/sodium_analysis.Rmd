@@ -1,5 +1,5 @@
 ### Test for association between change in Na+ consumption and change in life expectancy, from 1990 to 2010
-Last edited: February 16, 2015
+Last edited: March 14, 2015
 Kellie Ottoboni
 
 ```{r knitr_options, include=FALSE}
@@ -29,17 +29,17 @@ salt$popF_prop[is.na(salt$popF)] <- 0.5; salt$popM_prop[is.na(salt$popM)] <- 0.5
 salt$etohboth <- ifelse(is.na(salt$etohboth), salt$popM_prop*salt$etohM + salt$popF_prop*salt$etohF, salt$etohboth)
 
 salt <- arrange(salt, country, year)
-salt_filt <- select(salt, country, e0_M, e0_F, year, Na_M, Na_F, etohboth, etohM, etohF, pc_gdp, popM_prop, popF_prop)
+salt_filt <- dplyr::select(salt, country, e0_M, e0_F, year, Na_M, Na_F, etohboth, etohM, etohF, pc_gdp, popM_prop, popF_prop, smoking_M, smoking_F)
 
 salt2010           <- filter(salt_filt, year == 2010)
-etohM_mod <- lm(etohM~ e0_M + e0_F + Na_M + Na_F + pc_gdp, data = salt2010)
-etohF_mod <- lm(etohF~ e0_M + e0_F + Na_M + Na_F + pc_gdp, data = salt2010)
+etohM_mod <- lm(etohM~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F, data = salt2010)
+etohF_mod <- lm(etohF~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F, data = salt2010)
 twn <- which(is.na(salt2010$etohM))
 salt2010[twn, "etohM"] <- predict(etohM_mod, salt2010[twn,]); salt2010[twn, "etohF"] <- predict(etohF_mod, salt2010[twn,])
 salt2010[twn, "etohboth"] <- (salt2010$popM_prop*salt2010$etohM + salt2010$popF_prop*salt2010$etohF)[twn]
 
 salt1990           <- filter(salt_filt, year == 1990)
-etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp, data = salt1990)
+etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F, data = salt1990)
 twn <- which(is.na(salt1990$etohboth))
 salt1990[twn, "etohboth"] <- predict(etohboth_mod, salt1990[twn,])
 salt1990$etohM     <- salt1990$etohboth * (salt2010$etohM)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
@@ -53,10 +53,10 @@ salt_diff <- salt2010[,-1]-salt1990[,-1]
 salt_diff <- cbind(countries, salt_diff)
 salt_diff <- filter(salt_diff, !is.na(e0_M))
 
-male <- select(salt_diff, -countries, -e0_F, -year, -Na_F, -Na_M, -etohF, -etohboth)
+male <- select(salt_diff, -countries, -e0_F, -year, -Na_F, -Na_M, -etohF, -etohboth, -smoking_F)
 male_Na <- salt_diff$Na_M
 colnames(male) <- gsub("_M", "", colnames(male))
-female <- select(salt_diff, -countries, -e0_M, -year, -Na_M, -Na_F, -etohM, -etohboth)
+female <- select(salt_diff, -countries, -e0_M, -year, -Na_M, -Na_F, -etohM, -etohboth, -smoking_M)
 female_Na <- salt_diff$Na_F
 colnames(female) <- gsub("_F", "", colnames(female))
 ```

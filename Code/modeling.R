@@ -21,11 +21,10 @@ choose_model <- function(dat, bs = 10){
   mod_rf <- train(e0~., data = dat, method = "rf", tuneLength =10, trControl = ctrl)
   mod_boost <- train(e0~., data = dat, method = "gbm", tuneLength = 20, bag.fraction = 1, trControl = ctrl, verbose = FALSE)
   mod_nnet <- train(e0/6~., data = dat, method = "nnet", tuneLength = 10, trControl = ctrl, trace = FALSE)
-  mod_svm <- train(e0~., data = dat, method = "svmRadial", tuneGrid = expand.grid("C" = 2^seq(-2, 8),"sigma"=2*seq(.1,1, by = 1/10)), trControl = ctrl)
   })
   
-  models <- list(mod_lm, mod_poly, mod_tree, mod_bag, mod_rf, mod_svm, mod_boost, mod_nnet)
-  names(models) <- c("Linear regression", "Polynomial regression", "CART", "Bagged CART", "Random forest", "SVM with radial basis functions", "Stochastic gradient boosting", "Neural net")
+  models <- list(mod_lm, mod_poly, mod_tree, mod_bag, mod_rf, mod_boost, mod_nnet)
+  names(models) <- c("Linear regression", "Polynomial regression", "CART", "Bagged CART", "Random forest", "Stochastic gradient boosting", "Neural net")
   mse_calc <- function(x) mean((predict(x) - dat$e0)^2)
   mse <- sapply(models[1:length(models)-1], mse_calc)
   mse <- c(mse, mean((predict(mod_nnet)*6 - dat$e0)^2))
