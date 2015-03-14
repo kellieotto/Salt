@@ -53,10 +53,10 @@ salt_diff <- salt2010[,-1]-salt1990[,-1]
 salt_diff <- cbind(countries, salt_diff)
 salt_diff <- filter(salt_diff, !is.na(e0_M))
 
-male <- select(salt_diff, -countries, -e0_F, -year, -Na_F, -Na_M, -etohF, -etohboth, -smoking_F)
+male <- dplyr::select(salt_diff, e0_M, etohM, smoking_M, pc_gdp)
 male_Na <- salt_diff$Na_M
 colnames(male) <- gsub("_M", "", colnames(male))
-female <- select(salt_diff, -countries, -e0_M, -year, -Na_M, -Na_F, -etohM, -etohboth, -smoking_M)
+female <- dplyr::select(salt_diff,  e0_F, etohF, smoking_F, pc_gdp)
 female_Na <- salt_diff$Na_F
 colnames(female) <- gsub("_F", "", colnames(female))
 ```

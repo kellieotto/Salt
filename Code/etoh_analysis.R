@@ -1,4 +1,4 @@
-### Last edited: March 16, 2015
+### Last edited: March 14, 2015
 ### Kellie Ottoboni
 ### Test for association between change in etoh consumption and change in life expectancy, from 1990 to 2010
 
@@ -90,9 +90,9 @@ dev.off()
 
 
 pdf("etoh_exmort.pdf")
-qplot(etoh, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, "Alcohol (L/year)")), y = "Excess Mortality (years)", title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=-0.2, size = 3.5)
+qplot(etoh, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, "Alcohol (L/year)")), y = "Excess Mortality (years)", title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(abs(ex_mort) > 1, paste(country), "")), hjust=-0.2, size = 3.5)
 dev.off()
 
 pdf("lifeex_exmort_etohanalysis.pdf")
-qplot(le, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Life Expectancy (years)")), y = "Excess Mortality (years)", title = "Change in Life Expectancy")  + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=1.1, size = 3.5)
+qplot(le, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Life Expectancy (years)")), y = "Excess Mortality (years)", title = "Change in Life Expectancy")  + geom_text(aes(label=ifelse(abs(ex_mort) >1, paste(country), "")), hjust=1.1, size = 3.5)
 dev.off()

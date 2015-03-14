@@ -70,8 +70,10 @@ res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = fe
 
 
 
-ci_M <- permu_CI_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 10000, side = "both", verbosity = TRUE)
-ci_F <- permu_CI_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 10000, side = "both", verbosity = TRUE)
+# ci_M <- permu_CI_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 10000, side = "both", verbosity = TRUE)
+# ci_F <- permu_CI_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 10000, side = "both", verbosity = TRUE)
+ci_M <- ci_F <- c(0,0)
+
 
 res_table <- data.frame(rbind(c(res_M$estimate, res_M$pvalue, ci_M), c(res_F$estimate, res_F$pvalue, ci_F)))
 rownames(res_table) <- c("Male", "Female"); colnames(res_table) <- c("Estimate", "Upper p", "Lower p", "Two-sided p", "Lower CI", "Upper CI")

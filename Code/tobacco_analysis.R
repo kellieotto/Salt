@@ -45,8 +45,12 @@ colnames(male) <- gsub("_M", "", colnames(male))
 female <- dplyr::select(salt_diff, e0_F, etohF, pc_gdp)
 female_smoking <- salt_diff$smoking_F
 colnames(female) <- gsub("_F", "", colnames(female))
-
-
+# 
+# subsamp <- sample(1:nrow(male), size = floor(3*nrow(male)), replace = TRUE)
+# male <- rbind(male, male[subsamp,] + matrix(ncol = 3, rnorm(3*length(subsamp), mean = 0, sd = .05)))
+# female <- rbind(female, female[subsamp,] + matrix(ncol = 3, rnorm(3*length(subsamp), mean = 0, sd = .05)))
+# female_smoking <- c(female_smoking, female_smoking[subsamp])
+# male_smoking<-c(male_smoking, male_smoking[subsamp])
 
 
 ### Modeling step - test a bunch of different models and pick the one with the best in-sample fit
@@ -90,11 +94,11 @@ dev.off()
 
 
 pdf("smoking_exmort.pdf")
-qplot(smoking, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Smoking (cigarettes/smoker/day)")), y = "Excess Mortality (years)", title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=-0.2, size = 3.5)
+qplot(smoking, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Smoking (cigarettes/smoker/day)")), y = "Excess Mortality (years)", title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(abs(ex_mort) > 1, paste(country), "")), hjust=-0.2, size = 3.5)
 dev.off()
 
 pdf("lifeex_exmort_smokinganalysis.pdf")
-qplot(le, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Life Expectancy (years)")), y = "Excess Mortality (years)", title = "Change in Life Expectancy")  + geom_text(aes(label=ifelse(ex_mort < -2, paste(country), "")), hjust=1.1, size = 3.5)
+qplot(le, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Life Expectancy (years)")), y = "Excess Mortality (years)", title = "Change in Life Expectancy")  + geom_text(aes(label=ifelse(abs(ex_mort) > 1, paste(country), "")), hjust=1.1, size = 3.5)
 dev.off()
 
 
