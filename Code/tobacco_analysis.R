@@ -8,6 +8,8 @@ library(Hmisc)
 
 setwd("../Data")
 salt <- read.table("omnibus_data.csv", sep = "\t", header = TRUE)
+smoke <- read.table("smoking_t14.csv", sep = ",", header = TRUE)
+smoke <- dplyr::select(smoke, country_name_p, annual_pc_smoking_1990, annual_pc_smoking_2010)
 
 
 ### Clean up data, impute missing predictors within each year
@@ -15,17 +17,21 @@ salt <- mutate(salt, popF_prop = popF/(popF + popM), popM_prop = popM/(popF + po
 salt$popF_prop[is.na(salt$popF)] <- 0.5; salt$popM_prop[is.na(salt$popM)] <- 0.5
 salt$etohboth <- ifelse(is.na(salt$etohboth), salt$popM_prop*salt$etohM + salt$popF_prop*salt$etohF, salt$etohboth)
 
-salt <- arrange(salt, country, year)
-salt_filt <- dplyr::select(salt, country, e0_M, e0_F, year, Na_M, Na_F, etohboth, etohM, etohF, pc_gdp, popM_prop, popF_prop, smoking_M, smoking_F)
+salt <- arrange(salt, country_name_p, year)
+salt_filt <- dplyr::select(salt, country, country_name_p, e0_M, e0_F, year, Na_M, Na_F, etohboth, etohM, etohF, pc_gdp, popM_prop, popF_prop, smoking_M, smoking_F)
 
-salt2010           <- filter(salt_filt, year == 2010)
+salt2010 <- filter(salt_filt, year == 2010)
+salt2010 <- merge(smoke, salt2010)
+salt2010 <- dplyr::select(salt2010, -annual_pc_smoking_1990, -country_name_p)
 etohM_mod <- lm(etohM~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F, data = salt2010)
 etohF_mod <- lm(etohF~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F, data = salt2010)
 twn <- which(is.na(salt2010$etohM))
 salt2010[twn, "etohM"] <- predict(etohM_mod, salt2010[twn,]); salt2010[twn, "etohF"] <- predict(etohF_mod, salt2010[twn,])
 salt2010[twn, "etohboth"] <- (salt2010$popM_prop*salt2010$etohM + salt2010$popF_prop*salt2010$etohF)[twn]
 
-salt1990           <- filter(salt_filt, year == 1990)
+salt1990 <- filter(salt_filt, year == 1990)
+salt1990 <- merge(smoke, salt1990)
+salt1990 <- dplyr::select(salt1990, -annual_pc_smoking_2010, -country_name_p)
 etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F, data = salt1990)
 twn <- which(is.na(salt1990$etohboth))
 salt1990[twn, "etohboth"] <- predict(etohboth_mod, salt1990[twn,])
@@ -35,15 +41,15 @@ salt1990$etohF     <- salt1990$etohboth * (salt2010$etohF)/(salt2010$popM_prop*s
 
 ### Take difference between 2010 and 1990, split into male and female.
 countries <- salt2010$country
-salt_diff <- salt2010[,-1]-salt1990[,-1]
+salt_diff <- salt2010[,-2]-salt1990[,-2]
 salt_diff <- cbind(countries, salt_diff)
 salt_diff <- filter(salt_diff, !is.na(e0_M))
 
 male <- dplyr::select(salt_diff, e0_M, etohM, pc_gdp)
-male_smoking <- salt_diff$smoking_M
+male_smoking <- salt_diff$annual_pc_smoking_2010 
 colnames(male) <- gsub("_M", "", colnames(male))
 female <- dplyr::select(salt_diff, e0_F, etohF, pc_gdp)
-female_smoking <- salt_diff$smoking_F
+female_smoking <- salt_diff$annual_pc_smoking_2010 
 colnames(female) <- gsub("_F", "", colnames(female))
 # 
 # subsamp <- sample(1:nrow(male), size = floor(3*nrow(male)), replace = TRUE)
@@ -81,23 +87,23 @@ print(res_table)
 library(ggplot2)
 setwd("../Analysis")
 
-pdf("smoking_lifeexp.pdf")
+pdf("smoking_lifeexp2.pdf")
 dat <- data.frame("sex"     = c(rep("Male",nrow(male)), rep("Female",nrow(female))),
                   "smoking"  = as.numeric(c(male_smoking, female_smoking)),
                   "le"      = c(male$e0, female$e0),
                   "country" = rep(salt_diff$countries, 2),
                   "ex_mort" = c(pred_M-male$e0, pred_F-female$e0),
                   stringsAsFactors = FALSE)
-qplot(smoking, le, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Smoking (cigarettes/smoker/day)")), y = expression(paste(Delta, " Life Expectancy (years)")), title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(le<0,paste(country),"")) , hjust=-0.2, size = 3.5)
+qplot(smoking, le, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Smoking (cigarettes/smoker/day)")), y = expression(paste(Delta, " Life Expectancy (years)")), title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(le<0 | abs(smoking) > 2000,paste(country),"")) , hjust=-0.2, size = 3.5)
 dev.off()
 
 
 
-pdf("smoking_exmort.pdf")
-qplot(smoking, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Smoking (cigarettes/smoker/day)")), y = "Excess Mortality (years)", title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(abs(ex_mort) > 1, paste(country), "")), hjust=-0.2, size = 3.5)
+pdf("smoking_exmort2.pdf")
+qplot(smoking, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Smoking (cigarettes/smoker/day)")), y = "Excess Mortality (years)", title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(abs(ex_mort) > 1| abs(smoking) > 2000, paste(country), "")), hjust=-0.2, size = 3.5)
 dev.off()
 
-pdf("lifeex_exmort_smokinganalysis.pdf")
+pdf("lifeex_exmort_smokinganalysis2.pdf")
 qplot(le, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Life Expectancy (years)")), y = "Excess Mortality (years)", title = "Change in Life Expectancy")  + geom_text(aes(label=ifelse(abs(ex_mort) > 1, paste(country), "")), hjust=1.1, size = 3.5)
 dev.off()
 

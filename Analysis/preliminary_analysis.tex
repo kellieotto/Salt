@@ -30,57 +30,74 @@ We measured the strength of the association between sodium intake and the residu
 
 \section{Results}
 \subsection{Sodium consumption and life expectancy}
-We predicted life expectancy separately for males and females using change in smoking habits, change in alcohol consumption, and per capita GDP.  For both males and females, the predictive model with best fit was a random forest.  The correlation for males was $0.003$ (one-sided p-value $0.4835$, two-sided p-value $0.9854$) and the correlation for females was $-0.2640$ (one-sided p-value $0.9382$, two-sided p-value $0.1215$) (Figure~\ref{fig:sodium_excessmortality}). We conclude there is insufficient evidence to reject the null hypothesis that the correlation is $0$.  In fact, the correlation between change in sodium consumption and excess mortality for females is significantly less than $0$.  This means that for females in a particular country, an increase in sodium consumption is associated with a greater change in life expectancy than we would predict given that country's female alcohol consumption, female smoking prevalence, and per capita GDP. \\
+We predicted life expectancy separately for males and females using change in smoking prevalence, change in alcohol consumption, and per capita GDP.  For both males and females, the predictive model with best fit was a random forest.  The correlation for males was $0.003$ (one-sided p-value $0.4835$, two-sided p-value $0.9854$) and the correlation for females was $-0.2640$ (one-sided p-value $0.9382$, two-sided p-value $0.1215$) (Figure~\ref{fig:sodium_excessmortality}). We conclude there is insufficient evidence to reject the null hypothesis that the correlation is $0$.  In fact, the correlation between change in sodium consumption and excess mortality for females is significantly less than $0$.  This means that for females in a particular country, an increase in sodium consumption is associated with a greater change in life expectancy than we would predict given that country's female alcohol consumption, female smoking prevalence, and per capita GDP. \\
 
 
 
-\begin{figure}
+\begin{figure}[h]
 \centering
-\includegraphics[width = 0.5\textwidth]{sodium_lifeexp.pdf}
+\includegraphics[width = 0.4\textwidth]{sodium_lifeexp.pdf}
 \caption{Scatterplot of change in sodium intake against change in life expectancy at age 30 from 1990 to 2010. Even before correcting for the effect of other social and economic factors, there is no obvious association between sodium and life expectancy.}\label{fig:sodium_lifeexp}
-\end{figure}
+\end{figure}[h]
 
-\begin{figure}
+\begin{figure}[h]
 \centering
-\includegraphics[width = 0.5\textwidth]{sodium_exmort.pdf}
+\includegraphics[width = 0.4\textwidth]{sodium_exmort.pdf}
 \caption{Scatterplot of change in sodium intake against excess mortality.}\label{fig:sodium_excessmortality}
-\end{figure}
+\end{figure}[h]
 
 
 \clearpage
-\subsection{Smoking and life expectancy}
-We repeated the analysis, switching the roles of sodium and prevalence of smoking, measured in cigarettes smoked per person per day.  We predicted life expectancy separately for males and females using alcohol consumption and per capita GDP.  As before, the models with best fit for males and females were random forests.  The correlation between excess mortality and change in tobacco use from 1990 to 2010 for males was $0.0663$ (one-sided p-value $0.3489$, two-sided p-value $0.7059$).  The correlation between excess mortality and change in tobacco use from 1990 to 2010 for females was $-0.078$ (one-sided p-value $0.6749$, two-sided p-value $0.6574$).  There is insufficient evidence to reject the null hypothesis that there is no association between change in smoking habits and the change in life expectancy not explained by our prediction model.
+\subsection{Smoking prevalence and life expectancy}
+We repeated the analysis, switching the roles of sodium and age-standardized prevalence of smoking.  We predicted life expectancy separately for males and females using alcohol consumption and per capita GDP.  As before, the models with best fit for males and females were random forests.  The correlation between excess mortality and change in tobacco use from 1990 to 2010 for males was $0.0663$ (one-sided p-value $0.3489$, two-sided p-value $0.7059$).  The correlation between excess mortality and change in tobacco use from 1990 to 2010 for females was $-0.078$ (one-sided p-value $0.6749$, two-sided p-value $0.6574$).  There is insufficient evidence to reject the null hypothesis that there is no association between change in smoking habits and the change in life expectancy not explained by our prediction model.
 
 
-\begin{figure}
+\begin{figure}[h]
 \centering
-\includegraphics[width = 0.5\textwidth]{smoking_lifeexp.pdf}
-\caption{Scatterplot of change in cigarettes smoked against change in life expectancy at age 30 from 1990 to 2010.}\label{fig:smoking_lifeexp}
-\end{figure}
+\includegraphics[width = 0.4\textwidth]{smoking_lifeexp.pdf}
+\caption{Scatterplot of change in age standardized smoking prevalence against change in life expectancy at age 30 from 1990 to 2010.}\label{fig:smoking_lifeexp}
+\end{figure}[h]
 
-\begin{figure}
+\begin{figure}[h]
 \centering
-\includegraphics[width = 0.5\textwidth]{smoking_exmort.pdf}
-\caption{Scatterplot of change in cigarettes smoked against excess mortality.}\label{fig:smoking_excessmortality}
-\end{figure}
+\includegraphics[width = 0.4\textwidth]{smoking_exmort.pdf}
+\caption{Scatterplot of change in age standardized smoking prevalence against excess mortality.}\label{fig:smoking_excessmortality}
+\end{figure}[h]
 
+
+\clearpage
+\subsection{Cigarettes smoked per capita and life expectancy}
+We repeated the analysis using number of cigarettes (in millions) per capita instead of age-standardized prevalence of smoking.  We predicted life expectancy separately for males and females using alcohol consumption and per capita GDP.  As before, the models with best fit for males and females were random forests.  The correlation between excess mortality and change in tobacco use from 1990 to 2010 for males was $0.1922$ (one-sided p-value $0.1285$, two-sided p-value $0.2539$).  The correlation between excess mortality and change in tobacco use from 1990 to 2010 for females was $-0.1204$ (one-sided p-value $0.7589$, two-sided p-value $0.4813$).  There is insufficient evidence to reject the null hypothesis that there is no association between change in smoking habits and the change in life expectancy not explained by our prediction model.
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width = 0.4\textwidth]{smoking_lifeexp2.pdf}
+\caption{Scatterplot of change in cigarettes smoked per capita against change in life expectancy at age 30 from 1990 to 2010.}\label{fig:smoking_lifeexp2}
+\end{figure}[h]
+
+\begin{figure}[h]
+\centering
+\includegraphics[width = 0.4\textwidth]{smoking_exmort2.pdf}
+\caption{Scatterplot of change in cigarettes smoked per capita against excess mortality.}\label{fig:smoking_excessmortality2}
+\end{figure}[h]
 
 
 \subsection{Alcohol and life expectancy}
 We repeated the analysis once again, switching the roles of sodium and alcohol consumption, measured in liters of ethanol per year.  We used imputed alcohol consumption data, as described in the first section. We predicted life expectancy separately for males and females using sodium consumption, cigarettes smoked, and per capita GDP.  As before, the models with best fit for males and females were random forests.  The correlation between excess mortality and change in alcohol consumption from 1990 to 2010 for males was $0.4997$ (one-sided p-value $0.0014$, two-sided p-value $0.0021$).  The correlation between excess mortality and change in alcohol consumption from 1990 to 2010 for females was $0.4294$ (one-sided p-value $0.0051$, two-sided p-value $0.0082$).  There is strong evidence in favor of the alternative hypothesis that change in alcohol consumption is positively correlated with a change in mortality greater than what we would predict using only sodium consumption, smoking habits, and per capita GDP.
 
 
-\begin{figure}
+\begin{figure}[h]
 \centering
-\includegraphics[width = 0.5\textwidth]{etoh_lifeexp.pdf}
+\includegraphics[width = 0.4\textwidth]{etoh_lifeexp.pdf}
 \caption{Scatterplot of change in alcohol consumption against change in life expectancy at age 30 from 1990 to 2010.}\label{fig:etoh_lifeexp}
-\end{figure}
+\end{figure}[h]
 
-\begin{figure}
+\begin{figure}[h]
 \centering
-\includegraphics[width = 0.5\textwidth]{etoh_exmort.pdf}
+\includegraphics[width = 0.4\textwidth]{etoh_exmort.pdf}
 \caption{Scatterplot of change in alcohol consumption against excess mortality.}\label{fig:etoh_excessmortality}
-\end{figure}
+\end{figure}[h]
 
 
 \clearpage
@@ -112,7 +129,7 @@ Smoking and alcohol consumption are positively correlated for males and negative
 \hline
  \end{tabular}
 \end{center}
-\caption{Correlation and one-sided p-value for smoking and excess mortality.}
+\caption{Correlation and one-sided p-value for smoking prevalence and excess mortality.}
 \label{tab:smoking_sensitivity}
 \end{table}%
 
