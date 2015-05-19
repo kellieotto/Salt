@@ -61,10 +61,10 @@ img {
 
 
 
-<div id="test-for-association-between-change-in-na-consumption-and-change-in-life-expectancy-from-1990-to-2010" class="section level1">
-<h1>Test for association between change in Na+ consumption and change in life expectancy, from 1990 to 2010</h1>
-<p>Last edited: May 18, 2015</p>
-<p>Kellie Ottoboni</p>
+<div id="test-for-association-between-na-consumption-and-life-expectancy-from-1990-to-2010" class="section level1">
+<h1>Test for association between Na+ consumption and life expectancy, from 1990 to 2010</h1>
+<p><strong>Last edited: May 18, 2015</strong></p>
+<p><strong>Kellie Ottoboni</strong></p>
 <pre class="r"><code>set.seed(38)
 library(dplyr)
 library(Hmisc)</code></pre>
@@ -90,7 +90,7 @@ salt_filt &lt;- dplyr::select(salt, country, country_name_p, e0_M, e0_F, year, N
 
 salt2010 &lt;- filter(salt_filt, year == 2010)
 salt2010 &lt;- merge(smoke, salt2010)
-salt2010 &lt;- dplyr::select(salt2010, -annual_pc_smoking_1990, -country_name_p) %&gt;% mutate(smoking = annual_pc_smoking_2010)
+salt2010 &lt;- dplyr::select(salt2010, -annual_pc_smoking_1990, -country_name_p) %&gt;% mutate(smoking = annual_pc_smoking_2010) %&gt;% dplyr::select(-annual_pc_smoking_2010)
 etohM_mod &lt;- lm(etohM~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt2010)
 etohF_mod &lt;- lm(etohF~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt2010)
 twn &lt;- which(is.na(salt2010$etohM))
@@ -99,15 +99,19 @@ salt2010[twn, &quot;etohboth&quot;] &lt;- (salt2010$popM_prop*salt2010$etohM + s
 
 salt1990 &lt;- filter(salt_filt, year == 1990)
 salt1990 &lt;- merge(smoke, salt1990)
-salt1990 &lt;- dplyr::select(salt1990, -annual_pc_smoking_2010, -country_name_p)  %&gt;% mutate(smoking = annual_pc_smoking_1990)
+salt1990 &lt;- dplyr::select(salt1990, -annual_pc_smoking_2010, -country_name_p)  %&gt;% mutate(smoking = annual_pc_smoking_1990) %&gt;% dplyr::select(-annual_pc_smoking_1990)
 etohboth_mod &lt;- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F, data = salt1990)
 twn &lt;- which(is.na(salt1990$etohboth))
 salt1990[twn, &quot;etohboth&quot;] &lt;- predict(etohboth_mod, salt1990[twn,])
 salt1990$etohM     &lt;- salt1990$etohboth * (salt2010$etohM)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
 salt1990$etohF     &lt;- salt1990$etohboth * (salt2010$etohF)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)</code></pre>
-<p>We take the difference between predictors, outcome, and treatment in 2010 and 1990, then split the data into male and female sets.</p>
+</div>
+</div>
+<div id="change-over-time" class="section level1">
+<h1>Change over time</h1>
+<p>The first analysis we do looks at <em>changes</em> in these variables from 1990 to 2010. By taking the difference between levels in 2010 and 1990, we control for baseline differences between countries.</p>
 <pre class="r"><code>countries &lt;- salt2010$country
-salt_diff &lt;- salt2010[,-2]-salt1990[,-2]
+salt_diff &lt;- salt2010[,-1]-salt1990[,-1]
 salt_diff &lt;- cbind(countries, salt_diff)
 salt_diff &lt;- filter(salt_diff, !is.na(e0_M))
 
@@ -117,7 +121,6 @@ colnames(male) &lt;- gsub(&quot;_M&quot;, &quot;&quot;, colnames(male))
 female &lt;- dplyr::select(salt_diff,  e0_F, etohF, smoking, pc_gdp)
 female_Na &lt;- salt_diff$Na_F
 colnames(female) &lt;- gsub(&quot;_F&quot;, &quot;&quot;, colnames(female))</code></pre>
-</div>
 <div id="modeling-permutation-tests" class="section level2">
 <h2>Modeling + permutation tests</h2>
 <p>The goal is to predict change in life expectancy at age 30 without using Na+ consumption as a predictor. We will test a bunch of different models and pick the one with the best in-sample fit. We start by loading in the model-selection function. Then, we carry out model selection on the male data and female data to generate predictions.</p>
@@ -139,7 +142,7 @@ unadjusted_corr_F &lt;- permu_pearson(prediction = female$e0, response = 0, trea
 </div>
 <div id="adjusted-for-alcohol-consumption" class="section level3">
 <h3>Adjusted for alcohol consumption</h3>
-<p>Next, we predict change in life expectancy using ETOH consumption. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in sodium consumption.</p>
+<p>Next, we predict change in life expectancy using per capita GDP and ETOH consumption. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in sodium consumption.</p>
 <pre class="r"><code>mod_M_1 &lt;- male %&gt;% select(-smoking) %&gt;% choose_model()</code></pre>
 <pre><code>## note: only 1 unique complexity parameters in default grid. Truncating the grid to 1 .
 ## 
@@ -172,7 +175,7 @@ res_F_1 &lt;- permu_pearson(prediction = pred_F_1, response = female$e0, treatme
 </div>
 <div id="adjusted-for-alcohol-consumption-and-smoking" class="section level3">
 <h3>Adjusted for alcohol consumption and smoking</h3>
-<p>Finally, we predict change in life expectancy using ETOH consumption and annual cigarettes per capita. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in sodium consumption.</p>
+<p>Finally, we predict change in life expectancy using per capita GDP, ETOH consumption, and annual cigarettes per capita. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in sodium consumption.</p>
 <pre class="r"><code>mod_M &lt;- male %&gt;% choose_model()</code></pre>
 <pre><code>## note: only 2 unique complexity parameters in default grid. Truncating the grid to 2 .
 ## 
@@ -229,6 +232,97 @@ p3</code></pre>
 ##                 2</code></pre>
 <pre><code>## quartz_off_screen 
 ##                 2</code></pre>
+</div>
+</div>
+<div id="absolute-associations" class="section level1">
+<h1>Absolute associations</h1>
+<p>The previous analysis accounted for changes in life expectancy and in sodium, alcohol, and tobacco consumption from 1990 to 2010. We also want to look at the correlation between sodium and life expectancy at a fixed point in time, rather than taking differences.</p>
+<p>Aside from the data preparation, the analysis will be the same as the previous section.</p>
+<pre class="r"><code>salt_imputed &lt;- rbind(salt1990, salt2010)
+salt_imputed &lt;- salt_imputed %&gt;% filter(!is.na(e0_M) &amp; !is.na(e0_F))
+male &lt;- dplyr::select(salt_imputed, e0_M, etohM, smoking, pc_gdp)
+male_Na &lt;- salt_imputed$Na_M
+colnames(male) &lt;- gsub(&quot;_M&quot;, &quot;&quot;, colnames(male))
+female &lt;- dplyr::select(salt_imputed,  e0_F, etohF, smoking, pc_gdp)
+female_Na &lt;- salt_imputed$Na_F
+colnames(female) &lt;- gsub(&quot;_F&quot;, &quot;&quot;, colnames(female))</code></pre>
+<div id="results-1" class="section level2">
+<h2>Results</h2>
+<div id="unadjusted-correlation-1" class="section level3">
+<h3>Unadjusted correlation</h3>
+<p>We look at the correlation between sodium consumption and life expectancy at age 30.</p>
+<pre class="r"><code>unadjusted_corr_M &lt;- permu_pearson(prediction = male$e0, response = 0, treatment = male_Na, iters = 10000)
+unadjusted_corr_F &lt;- permu_pearson(prediction = female$e0, response = 0, treatment = female_Na, iters = 10000)</code></pre>
+<pre><code>##           Estimate Upper p Lower p Two-sided p
+## Male   -0.12679967  0.8515  0.1485      0.2829
+## Female  0.05614812  0.3174  0.6826      0.6345</code></pre>
+</div>
+<div id="adjusted-for-alcohol-consumption-1" class="section level3">
+<h3>Adjusted for alcohol consumption</h3>
+<p>Next, we predict life expectancy using ETOH consumption and per capita GDP. We look at the correlation between the residuals (predicted - actual life expectancy) and sodium consumption.</p>
+<pre class="r"><code>mod_M_1 &lt;- male %&gt;% select(-smoking) %&gt;% choose_model()</code></pre>
+<pre><code>## note: only 1 unique complexity parameters in default grid. Truncating the grid to 1 .
+## 
+##            Linear regression        Polynomial regression 
+##                     6.749356                     6.749356 
+##                         CART                  Bagged CART 
+##                     3.851430                     3.646315 
+##                Random forest Stochastic gradient boosting 
+##                     1.230925                     3.659199 
+##                   Neural net 
+##                  1511.478571</code></pre>
+<pre class="r"><code>pred_M_1 &lt;- predict(mod_M_1, male)
+res_M_1 &lt;- permu_pearson(prediction = pred_M_1, response = male$e0, treatment = male_Na, iters = 10000)
+mod_F_1 &lt;- female %&gt;% select(-smoking) %&gt;% choose_model()</code></pre>
+<pre><code>## note: only 1 unique complexity parameters in default grid. Truncating the grid to 1 .
+## 
+##            Linear regression        Polynomial regression 
+##                    3.5741172                    3.5741172 
+##                         CART                  Bagged CART 
+##                    2.3386456                    1.7446877 
+##                Random forest Stochastic gradient boosting 
+##                    0.6211074                    1.7439849 
+##                   Neural net 
+##                 2012.7039505</code></pre>
+<pre class="r"><code>pred_F_1 &lt;- predict(mod_F_1, female)
+res_F_1 &lt;- permu_pearson(prediction = pred_F_1, response = female$e0, treatment = female_Na, iters = 10000)</code></pre>
+<pre><code>##          Estimate Upper p Lower p Two-sided p
+## Male    0.1246139  0.1527  0.8473      0.3027
+## Female -0.1803014  0.9355  0.0645      0.1256</code></pre>
+</div>
+<div id="adjusted-for-alcohol-consumption-and-smoking-1" class="section level3">
+<h3>Adjusted for alcohol consumption and smoking</h3>
+<p>Finally, we predict life expectancy using per capita GDP, ETOH consumption, annual cigarettes per capita. We look at the correlation between the residuals (predicted - actual life expectancy) and sodium consumption.</p>
+<pre class="r"><code>mod_M &lt;- male %&gt;% choose_model()</code></pre>
+<pre><code>## note: only 2 unique complexity parameters in default grid. Truncating the grid to 2 .
+## 
+##            Linear regression        Polynomial regression 
+##                     6.730728                     6.730728 
+##                         CART                  Bagged CART 
+##                     3.483394                     3.158696 
+##                Random forest Stochastic gradient boosting 
+##                     1.126233                     2.672837 
+##                   Neural net 
+##                  1511.478571</code></pre>
+<pre class="r"><code>pred_M &lt;- predict(mod_M, male)
+res_M &lt;- permu_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 10000)
+mod_F &lt;- female %&gt;% choose_model()</code></pre>
+<pre><code>## note: only 2 unique complexity parameters in default grid. Truncating the grid to 2 .
+## 
+##            Linear regression        Polynomial regression 
+##                    3.5303369                    3.5303369 
+##                         CART                  Bagged CART 
+##                    1.7382622                    1.4571271 
+##                Random forest Stochastic gradient boosting 
+##                    0.5280312                    1.5796176 
+##                   Neural net 
+##                 2012.7039505</code></pre>
+<pre class="r"><code>pred_F &lt;- predict(mod_F, female)
+res_F &lt;- permu_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 10000)</code></pre>
+<pre><code>##           Estimate Upper p Lower p Two-sided p
+## Male    0.07000862  0.2813  0.7187      0.5575
+## Female -0.17189721  0.9312  0.0688      0.1411</code></pre>
+</div>
 <div id="r-and-package-versions-used" class="section level3">
 <h3>R and package versions used</h3>
 <pre class="r"><code>sessionInfo()</code></pre>
