@@ -36,32 +36,14 @@ We predicted life expectancy separately for males and females using change in sm
 
 \begin{figure}[h]
 \centering
-\includegraphics[width = 0.4\textwidth]{sodium_lifeexp.pdf}
+\includegraphics[width = 0.4\textwidth]{plots/sodium_lifeexp.pdf}
 \caption{Scatterplot of change in sodium intake against change in life expectancy at age 30 from 1990 to 2010. Even before correcting for the effect of other social and economic factors, there is no obvious association between sodium and life expectancy.}\label{fig:sodium_lifeexp}
 \end{figure}[h]
 
 \begin{figure}[h]
 \centering
-\includegraphics[width = 0.4\textwidth]{sodium_exmort.pdf}
+\includegraphics[width = 0.4\textwidth]{plots/sodium_exmort.pdf}
 \caption{Scatterplot of change in sodium intake against excess mortality.}\label{fig:sodium_excessmortality}
-\end{figure}[h]
-
-
-\clearpage
-\subsection{Smoking prevalence and life expectancy}
-We repeated the analysis, switching the roles of sodium and age-standardized prevalence of smoking.  We predicted life expectancy separately for males and females using alcohol consumption and per capita GDP.  As before, the models with best fit for males and females were random forests.  The correlation between excess mortality and change in tobacco use from 1990 to 2010 for males was $0.0663$ (one-sided p-value $0.3489$, two-sided p-value $0.7059$).  The correlation between excess mortality and change in tobacco use from 1990 to 2010 for females was $-0.078$ (one-sided p-value $0.6749$, two-sided p-value $0.6574$).  There is insufficient evidence to reject the null hypothesis that there is no association between change in smoking habits and the change in life expectancy not explained by our prediction model.
-
-
-\begin{figure}[h]
-\centering
-\includegraphics[width = 0.4\textwidth]{smoking_lifeexp.pdf}
-\caption{Scatterplot of change in age standardized smoking prevalence against change in life expectancy at age 30 from 1990 to 2010.}\label{fig:smoking_lifeexp}
-\end{figure}[h]
-
-\begin{figure}[h]
-\centering
-\includegraphics[width = 0.4\textwidth]{smoking_exmort.pdf}
-\caption{Scatterplot of change in age standardized smoking prevalence against excess mortality.}\label{fig:smoking_excessmortality}
 \end{figure}[h]
 
 
@@ -72,14 +54,14 @@ We repeated the analysis using number of cigarettes (in millions) per capita ins
 
 \begin{figure}[h]
 \centering
-\includegraphics[width = 0.4\textwidth]{smoking_lifeexp2.pdf}
-\caption{Scatterplot of change in cigarettes smoked per capita against change in life expectancy at age 30 from 1990 to 2010.}\label{fig:smoking_lifeexp2}
+\includegraphics[width = 0.4\textwidth]{plots/smoking_lifeexp.pdf}
+\caption{Scatterplot of change in cigarettes smoked per capita against change in life expectancy at age 30 from 1990 to 2010.}\label{fig:smoking_lifeexp}
 \end{figure}[h]
 
 \begin{figure}[h]
 \centering
-\includegraphics[width = 0.4\textwidth]{smoking_exmort2.pdf}
-\caption{Scatterplot of change in cigarettes smoked per capita against excess mortality.}\label{fig:smoking_excessmortality2}
+\includegraphics[width = 0.4\textwidth]{plots/smoking_exmort.pdf}
+\caption{Scatterplot of change in cigarettes smoked per capita against excess mortality.}\label{fig:smoking_excessmortality}
 \end{figure}[h]
 
 
@@ -89,13 +71,13 @@ We repeated the analysis once again, switching the roles of sodium and alcohol c
 
 \begin{figure}[h]
 \centering
-\includegraphics[width = 0.4\textwidth]{etoh_lifeexp.pdf}
+\includegraphics[width = 0.4\textwidth]{plots/etoh_lifeexp.pdf}
 \caption{Scatterplot of change in alcohol consumption against change in life expectancy at age 30 from 1990 to 2010.}\label{fig:etoh_lifeexp}
 \end{figure}[h]
 
 \begin{figure}[h]
 \centering
-\includegraphics[width = 0.4\textwidth]{etoh_exmort.pdf}
+\includegraphics[width = 0.4\textwidth]{plots/etoh_exmort.pdf}
 \caption{Scatterplot of change in alcohol consumption against excess mortality.}\label{fig:etoh_excessmortality}
 \end{figure}[h]
 

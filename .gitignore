@@ -1,3 +1,6 @@
 .Rdata
 .Rhistory
 *.history
+.log
+.synctex.gz
+.aux
