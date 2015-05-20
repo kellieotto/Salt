@@ -16,13 +16,15 @@ if(!require("ModelMatch")){library(devtools); install_github("kellieotto/ModelMa
 set.seed(38)
 library(dplyr)
 library(Hmisc)
+source("../Code/modeling.R")
+library(ModelMatch)
 ```
 
 ## Data cleaning
 
 Data cleaning is identical to the sodium analysis.
 
-```{r impute}
+```{r impute, include=FALSE}
 salt <- read.table("../Data/omnibus_data.csv", sep = "\t", header = TRUE)
 smoke <- read.table("../Data/smoking_t14.csv", sep = ",", header = TRUE)
 smoke <- dplyr::select(smoke, country_name_p, annual_pc_smoking_1990, annual_pc_smoking_2010)
@@ -47,7 +49,7 @@ salt2010[twn, "etohboth"] <- (salt2010$popM_prop*salt2010$etohM + salt2010$popF_
 salt1990 <- filter(salt_filt, year == 1990)
 salt1990 <- merge(smoke, salt1990)
 salt1990 <- dplyr::select(salt1990, -annual_pc_smoking_2010, -country_name_p)  %>% mutate(smoking = annual_pc_smoking_1990) %>% dplyr::select(-annual_pc_smoking_1990)
-etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F, data = salt1990)
+etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt1990)
 twn <- which(is.na(salt1990$etohboth))
 salt1990[twn, "etohboth"] <- predict(etohboth_mod, salt1990[twn,])
 salt1990$etohM     <- salt1990$etohboth * (salt2010$etohM)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
@@ -64,18 +66,14 @@ salt_diff <- salt2010[,-1]-salt1990[,-1]
 salt_diff <- cbind(countries, salt_diff)
 salt_diff <- filter(salt_diff, !is.na(e0_M))
 
-male <- dplyr::select(salt_diff, e0_M, pc_gdp, Na_M, smoking_M)
+male <- dplyr::select(salt_diff, e0_M, pc_gdp, Na_M, smoking)
 male_etoh <- salt_diff$etohM
 colnames(male) <- gsub("_M", "", colnames(male))
-female <- dplyr::select(salt_diff, e0_F, Na_F, smoking_F, pc_gdp)
+female <- dplyr::select(salt_diff, e0_F, Na_F, smoking, pc_gdp)
 female_etoh <- salt_diff$etohF
 colnames(female) <- gsub("_F", "", colnames(female))
 ```
 
-```{r modelmatch}
-source("../Code/modeling.R")
-library(ModelMatch)
-```
 
 ## Results
 
@@ -95,10 +93,12 @@ print(res_table_unadj)
 ### Adjusted for sodium consumption
 
 Next, we predict change in life expectancy using per capita GDP and sodium consumption. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in alcohol consumption.
-```{r modeling_na}
+```{r modeling_na, results='hold'}
+cat('Model selection: male \n')
 mod_M_1 <- male %>% select(-smoking) %>% choose_model()
 pred_M_1 <- predict(mod_M_1, male)
 res_M_1 <- permu_pearson(prediction = pred_M_1, response = male$e0, treatment = male_etoh, iters = 10000)
+cat('Model selection: female \n')
 mod_F_1 <- female %>% select(-smoking) %>% choose_model()
 pred_F_1 <- predict(mod_F_1, female)
 res_F_1 <- permu_pearson(prediction = pred_F_1, response = female$e0, treatment = female_etoh, iters = 10000)
@@ -113,10 +113,12 @@ print(res_table_na)
 
 Finally, we predict change in life expectancy using per capita GDP, Na+ consumption, and annual cigarettes per capita. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in alcohol consumption.
 
-```{r modeling_na_tobacco}
+```{r modeling_na_tobacco, results='hold'}
+cat('Model selection: male \n')
 mod_M <- male %>% choose_model()
 pred_M <- predict(mod_M, male)
 res_M <- permu_pearson(prediction = pred_M, response = male$e0, treatment = male_etoh, iters = 10000)
+cat('Model selection: female \n')
 mod_F <- female %>% choose_model()
 pred_F <- predict(mod_F, female)
 res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = female_etoh, iters = 10000)
@@ -149,11 +151,11 @@ p3
 ```
 
 
-```{r renderplots, echo=FALSE}
-pdf("../Analysis/etoh_lifeexp.pdf")
+```{r renderplots, include=FALSE}
+pdf("../Analysis/plots/etoh_lifeexp.pdf")
 p1
 dev.off()
-pdf("../Analysis/etoh_exmort.pdf")
+pdf("../Analysis/plots/etoh_exmort.pdf")
 p2
 dev.off()
 ```
@@ -161,7 +163,7 @@ dev.off()
 
 
 # Absolute associations
-The previous analysis accounted for changes in life expectancy and in sodium, alcohol, and tobacco consumption from 1990 to 2010. We also want to look at the correlation between sodium and life expectancy at a fixed point in time, rather than taking differences.
+The previous analysis accounted for changes in life expectancy and in sodium, alcohol, and tobacco consumption from 1990 to 2010. We also want to look at the correlation between alcohol consumption and life expectancy at a fixed point in time, rather than taking differences.
 
 Aside from the data preparation, the analysis will be the same as the previous section.
 
@@ -196,10 +198,12 @@ print(res_table_unadj)
 ### Adjusted for sodium consumption
 
 Next, we predict life expectancy using sodium consumption and per capita GDP. We look at the correlation between the residuals (predicted - actual life expectancy) and alcohol consumption.
-```{r modeling_na2}
+```{r modeling_na2, results='hold'}
+cat('Model selection: male \n')
 mod_M_1 <- male %>% select(-smoking) %>% choose_model()
 pred_M_1 <- predict(mod_M_1, male)
 res_M_1 <- permu_pearson(prediction = pred_M_1, response = male$e0, treatment = male_etoh, iters = 10000)
+cat('Model selection: female \n')
 mod_F_1 <- female %>% select(-smoking) %>% choose_model()
 pred_F_1 <- predict(mod_F_1, female)
 res_F_1 <- permu_pearson(prediction = pred_F_1, response = female$e0, treatment = female_etoh, iters = 10000)
@@ -214,10 +218,12 @@ print(res_table_na)
 
 Finally, we predict life expectancy using per capita GDP, sodium consumption, annual cigarettes per capita. We look at the correlation between the residuals (predicted - actual life expectancy) and alcohol consumption.
 
-```{r modeling_na_tobacco2}
+```{r modeling_na_tobacco2, results='hold'}
+cat('Model selection: male \n')
 mod_M <- male %>% choose_model()
 pred_M <- predict(mod_M, male)
 res_M <- permu_pearson(prediction = pred_M, response = male$e0, treatment = male_etoh, iters = 10000)
+cat('Model selection: female \n')
 mod_F <- female %>% choose_model()
 pred_F <- predict(mod_F, female)
 res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = female_etoh, iters = 10000)

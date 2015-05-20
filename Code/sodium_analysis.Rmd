@@ -52,11 +52,25 @@ salt2010[twn, "etohboth"] <- (salt2010$popM_prop*salt2010$etohM + salt2010$popF_
 salt1990 <- filter(salt_filt, year == 1990)
 salt1990 <- merge(smoke, salt1990)
 salt1990 <- dplyr::select(salt1990, -annual_pc_smoking_2010, -country_name_p)  %>% mutate(smoking = annual_pc_smoking_1990) %>% dplyr::select(-annual_pc_smoking_1990)
-etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F, data = salt1990)
+etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt1990)
 twn <- which(is.na(salt1990$etohboth))
 salt1990[twn, "etohboth"] <- predict(etohboth_mod, salt1990[twn,])
 salt1990$etohM     <- salt1990$etohboth * (salt2010$etohM)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
 salt1990$etohF     <- salt1990$etohboth * (salt2010$etohF)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
+```
+
+
+## Modeling + permutation tests
+
+The goal is to predict change in life expectancy at age 30 without using Na+ consumption as a predictor. We will test a bunch of different models and pick the one with the best in-sample fit. We start by loading in the model-selection function. Then, we carry out model selection on the male data and female data to generate predictions.
+
+We try fitting several models to the data: linear models, tree methods, etc., and we tune the parameters of each model using bootstrapping (all this is done using the `train` function). Finally, we choose the model with the lowest in-sample prediction error (measured as MSE here).
+
+We need to import [the ModelMatch library](https://github.com/kellieotto/ModelMatch) to carry out the statistical inference. Using `ModelMatch` we'll conduct permutation tests for the correlation between treatment (change in sodium consumption) and the outcome of interest (change in 30-year life expectancy). We do this for both the observed change in life expectancy and for the residuals of the model (predicted - true change in 30-year life expectancy).
+
+```{r modelmatch}
+source("../Code/modeling.R")
+library(ModelMatch)
 ```
 
 # Change over time
@@ -77,19 +91,6 @@ female_Na <- salt_diff$Na_F
 colnames(female) <- gsub("_F", "", colnames(female))
 ```
 
-## Modeling + permutation tests
-
-The goal is to predict change in life expectancy at age 30 without using Na+ consumption as a predictor. We will test a bunch of different models and pick the one with the best in-sample fit. We start by loading in the model-selection function. Then, we carry out model selection on the male data and female data to generate predictions.
-
-We try fitting several models to the data: linear models, tree methods, etc., and we tune the parameters of each model using bootstrapping (all this is done using the `train` function). Finally, we choose the model with the lowest in-sample prediction error (measured as MSE here).
-
-We need to import [the ModelMatch library](https://github.com/kellieotto/ModelMatch) to carry out the statistical inference. Using `ModelMatch` we'll conduct permutation tests for the correlation between treatment (change in sodium consumption) and the outcome of interest (change in 30-year life expectancy). We do this for both the observed change in life expectancy and for the residuals of the model (predicted - true change in 30-year life expectancy).
-
-```{r modelmatch}
-source("../Code/modeling.R")
-library(ModelMatch)
-```
-
 ## Results
 
 ### Unadjusted correlation
@@ -108,10 +109,12 @@ print(res_table_unadj)
 ### Adjusted for alcohol consumption
 
 Next, we predict change in life expectancy using per capita GDP and ETOH consumption. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in sodium consumption.
-```{r modeling_etoh}
+```{r modeling_etoh, results='hold'}
+cat('Model selection: male \n')
 mod_M_1 <- male %>% select(-smoking) %>% choose_model()
 pred_M_1 <- predict(mod_M_1, male)
 res_M_1 <- permu_pearson(prediction = pred_M_1, response = male$e0, treatment = male_Na, iters = 10000)
+cat('Model selection: female \n')
 mod_F_1 <- female %>% select(-smoking) %>% choose_model()
 pred_F_1 <- predict(mod_F_1, female)
 res_F_1 <- permu_pearson(prediction = pred_F_1, response = female$e0, treatment = female_Na, iters = 10000)
@@ -126,10 +129,12 @@ print(res_table_etoh)
 
 Finally, we predict change in life expectancy using per capita GDP, ETOH consumption, and annual cigarettes per capita. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in sodium consumption.
 
-```{r modeling_etoh_tobacco}
+```{r modeling_etoh_tobacco, results='hold'}
+cat('Model selection: male \n')
 mod_M <- male %>% choose_model()
 pred_M <- predict(mod_M, male)
 res_M <- permu_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 10000)
+cat('Model selection: female \n')
 mod_F <- female %>% choose_model()
 pred_F <- predict(mod_F, female)
 res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 10000)
@@ -162,14 +167,14 @@ p3
 ```
 
 
-```{r renderplots, echo=FALSE}
-pdf("../Analysis/sodium_lifeexp.pdf")
+```{r renderplots, include=FALSE}
+pdf("../Analysis/plots/sodium_lifeexp.pdf")
 p1
 dev.off()
-pdf("../Analysis/sodium_exmort.pdf")
+pdf("../Analysis/plots/sodium_exmort.pdf")
 p2
 dev.off()
-pdf("../Analysis/lifeex_exmort.pdf")
+pdf("../Analysis/plots/lifeex_exmort.pdf")
 p3
 dev.off()
 ```
@@ -212,10 +217,12 @@ print(res_table_unadj)
 ### Adjusted for alcohol consumption
 
 Next, we predict life expectancy using ETOH consumption and per capita GDP. We look at the correlation between the residuals (predicted - actual life expectancy) and sodium consumption.
-```{r modeling_etoh2}
+```{r modeling_etoh2, results='hold'}
+cat('Model selection: male \n')
 mod_M_1 <- male %>% select(-smoking) %>% choose_model()
 pred_M_1 <- predict(mod_M_1, male)
 res_M_1 <- permu_pearson(prediction = pred_M_1, response = male$e0, treatment = male_Na, iters = 10000)
+cat('Model selection: female \n')
 mod_F_1 <- female %>% select(-smoking) %>% choose_model()
 pred_F_1 <- predict(mod_F_1, female)
 res_F_1 <- permu_pearson(prediction = pred_F_1, response = female$e0, treatment = female_Na, iters = 10000)
@@ -230,10 +237,12 @@ print(res_table_etoh)
 
 Finally, we predict life expectancy using per capita GDP, ETOH consumption, annual cigarettes per capita. We look at the correlation between the residuals (predicted - actual life expectancy) and sodium consumption.
 
-```{r modeling_etoh_tobacco2}
+```{r modeling_etoh_tobacco2, results='hold'}
+cat('Model selection: male \n')
 mod_M <- male %>% choose_model()
 pred_M <- predict(mod_M, male)
 res_M <- permu_pearson(prediction = pred_M, response = male$e0, treatment = male_Na, iters = 10000)
+cat('Model selection: female \n')
 mod_F <- female %>% choose_model()
 pred_F <- predict(mod_F, female)
 res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = female_Na, iters = 10000)

@@ -1,0 +1,243 @@
+# Test for association between tobacco consumption and life expectancy, from 1990 to 2010
+**Last edited: May 20, 2015**
+
+**Kellie Ottoboni**
+
+```{r knitr_options, include=FALSE}
+library(knitr)
+library(xtable)
+opts_chunk$set(fig.width=12, fig.height=4, fig.path='RmdFigs/',
+               warning=FALSE, message=FALSE)
+# install package if necessary:
+if(!require("ModelMatch")){library(devtools); install_github("kellieotto/ModelMatch/ModelMatch")}
+```
+
+```{r load_data}
+set.seed(38)
+library(dplyr)
+library(Hmisc)
+source("../Code/modeling.R")
+library(ModelMatch)
+```
+
+## Data cleaning
+
+Data cleaning is identical to the sodium analysis.
+
+```{r impute, include=FALSE}
+salt <- read.table("../Data/omnibus_data.csv", sep = "\t", header = TRUE)
+smoke <- read.table("../Data/smoking_t14.csv", sep = ",", header = TRUE)
+smoke <- dplyr::select(smoke, country_name_p, annual_pc_smoking_1990, annual_pc_smoking_2010)
+
+
+salt <- mutate(salt, popF_prop = popF/(popF + popM), popM_prop = popM/(popF + popM))
+salt$popF_prop[is.na(salt$popF)] <- 0.5; salt$popM_prop[is.na(salt$popM)] <- 0.5
+salt$etohboth <- ifelse(is.na(salt$etohboth), salt$popM_prop*salt$etohM + salt$popF_prop*salt$etohF, salt$etohboth)
+
+salt <- arrange(salt, country, year)
+salt_filt <- dplyr::select(salt, country, country_name_p, e0_M, e0_F, year, Na_M, Na_F, etohboth, etohM, etohF, pc_gdp, popM_prop, popF_prop, smoking_M, smoking_F)
+
+salt2010 <- filter(salt_filt, year == 2010)
+salt2010 <- merge(smoke, salt2010)
+salt2010 <- dplyr::select(salt2010, -annual_pc_smoking_1990, -country_name_p) %>% mutate(smoking = annual_pc_smoking_2010) %>% dplyr::select(-annual_pc_smoking_2010)
+etohM_mod <- lm(etohM~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt2010)
+etohF_mod <- lm(etohF~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt2010)
+twn <- which(is.na(salt2010$etohM))
+salt2010[twn, "etohM"] <- predict(etohM_mod, salt2010[twn,]); salt2010[twn, "etohF"] <- predict(etohF_mod, salt2010[twn,])
+salt2010[twn, "etohboth"] <- (salt2010$popM_prop*salt2010$etohM + salt2010$popF_prop*salt2010$etohF)[twn]
+
+salt1990 <- filter(salt_filt, year == 1990)
+salt1990 <- merge(smoke, salt1990)
+salt1990 <- dplyr::select(salt1990, -annual_pc_smoking_2010, -country_name_p)  %>% mutate(smoking = annual_pc_smoking_1990) %>% dplyr::select(-annual_pc_smoking_1990)
+etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt1990)
+twn <- which(is.na(salt1990$etohboth))
+salt1990[twn, "etohboth"] <- predict(etohboth_mod, salt1990[twn,])
+salt1990$etohM     <- salt1990$etohboth * (salt2010$etohM)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
+salt1990$etohF     <- salt1990$etohboth * (salt2010$etohF)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
+```
+
+# Change over time
+
+The first analysis we do looks at *changes* in these variables from 1990 to 2010. By taking the difference between levels in 2010 and 1990, we control for baseline differences between countries. Unfortunately, the measure of smoking that we use (cigarettes per capita, annually) is not split by gender.
+
+
+```{r malefemale}
+countries <- salt2010$country
+salt_diff <- salt2010[,-1]-salt1990[,-1]
+salt_diff <- cbind(countries, salt_diff)
+salt_diff <- filter(salt_diff, !is.na(e0_M))
+
+male <- dplyr::select(salt_diff, e0_M, pc_gdp, Na_M, etohM)
+colnames(male) <- gsub("_?M", "", colnames(male))
+female <- dplyr::select(salt_diff, e0_F, Na_F, etohF, pc_gdp)
+colnames(female) <- gsub("_?F", "", colnames(female))
+tobacco <- salt_diff$smoking
+```
+
+
+## Results
+
+### Unadjusted correlation
+We begin by looking at the correlation between the change in tobacco consumption and change in life expectancy at age 30.
+
+```{r unadjusted}
+unadjusted_corr_M <- permu_pearson(prediction = male$e0, response = 0, treatment = tobacco, iters = 10000)
+unadjusted_corr_F <- permu_pearson(prediction = female$e0, response = 0, treatment = tobacco, iters = 10000)
+```
+```{r unadj_table, echo=FALSE}
+res_table_unadj <- data.frame(rbind(c(unadjusted_corr_M$estimate, unadjusted_corr_M$pvalue), c(unadjusted_corr_F$estimate, unadjusted_corr_F$pvalue)))
+rownames(res_table_unadj) <- c("Male", "Female"); colnames(res_table_unadj) <- c("Estimate", "Upper p", "Lower p", "Two-sided p")
+print(res_table_unadj)
+```
+
+### Adjusted for alcohol consumption
+
+Next, we predict change in life expectancy using per capita GDP and alcohol consumption. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in tobacco consumption.
+```{r modeling_etoh, results='hold'}
+cat('Model selection: male \n')
+mod_M_1 <- male %>% select(-Na) %>% choose_model()
+pred_M_1 <- predict(mod_M_1, male)
+res_M_1 <- permu_pearson(prediction = pred_M_1, response = male$e0, treatment = tobacco, iters = 10000)
+cat('Model selection: female \n')
+mod_F_1 <- female %>% select(-Na) %>% choose_model()
+pred_F_1 <- predict(mod_F_1, female)
+res_F_1 <- permu_pearson(prediction = pred_F_1, response = female$e0, treatment = tobacco, iters = 10000)
+```
+```{r adj_etoh_table, echo=FALSE}
+res_table_etoh <- data.frame(rbind(c(res_M_1$estimate, res_M_1$pvalue), c(res_F_1$estimate, res_F_1$pvalue)))
+rownames(res_table_etoh) <- c("Male", "Female"); colnames(res_table_etoh) <- c("Estimate", "Upper p", "Lower p", "Two-sided p")
+print(res_table_etoh)
+```
+
+### Adjusted for sodium consumption and alcohol consumption
+
+Finally, we predict change in life expectancy using per capita GDP, Na+ consumption, and alcohol consumption. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in alcohol consumption.
+
+```{r modeling_na_etoh, results='hold'}
+cat('Model selection: male \n')
+mod_M <- male %>% choose_model()
+pred_M <- predict(mod_M, male)
+res_M <- permu_pearson(prediction = pred_M, response = male$e0, treatment = tobacco, iters = 10000)
+cat('Model selection: female \n')
+mod_F <- female %>% choose_model()
+pred_F <- predict(mod_F, female)
+res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = tobacco, iters = 10000)
+```
+```{r na_etoh_table, echo=FALSE}
+res_table_na_etoh <- data.frame(rbind(c(res_M$estimate, res_M$pvalue), c(res_F$estimate, res_F$pvalue)))
+rownames(res_table_na_etoh) <- c("Male", "Female"); colnames(res_table_na_etoh) <- c("Estimate", "Upper p", "Lower p", "Two-sided p")
+print(res_table_na_etoh)
+```
+
+
+## Plots
+```{r plots}
+library(ggplot2)
+
+dat <- data.frame("sex"     = c(rep("Male",nrow(male)), rep("Female",nrow(female))),
+                  "smoking"  = as.numeric(c(tobacco, tobacco)),
+                  "le"      = c(male$e0, female$e0),
+                  "country" = rep(salt_diff$countries, 2),
+                  "ex_mort" = c(pred_M-male$e0, pred_F-female$e0),
+                  stringsAsFactors = FALSE)
+p1 <- qplot(smoking, le, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, "Cigarettes (per capita/year)")), y = expression(paste(Delta, " Life Expectancy (years)")), title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(le<0,paste(country),"")) , hjust=-0.2, size = 3.5)
+p1
+
+p2 <- qplot(smoking, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, "Cigarettes (per capita/year)")), y = "Excess Mortality (years)", title = "Change from 1990 to 2010") + geom_text(aes(label=ifelse(abs(ex_mort) > 1, paste(country), "")), hjust=-0.2, size = 3.5)
+p2
+
+p3 <- qplot(le, ex_mort, data = dat, facets = sex~., colour = sex) + theme(legend.position = "none") + labs(x = expression(paste(Delta, " Life Expectancy (years)")), y = "Excess Mortality (years)", title = "Change in Life Expectancy")  + geom_text(aes(label=ifelse(abs(ex_mort) >1, paste(country), "")), hjust=1.1, size = 3.5)
+p3
+```
+
+
+```{r renderplots, include=FALSE}
+pdf("../Analysis/plots/smoking_lifeexp.pdf")
+p1
+dev.off()
+pdf("../Analysis/plots/smoking_exmort.pdf")
+p2
+dev.off()
+```
+
+
+
+# Absolute associations
+The previous analysis accounted for changes in life expectancy and in sodium, alcohol, and tobacco consumption from 1990 to 2010. We also want to look at the correlation between smoking and life expectancy at a fixed point in time, rather than taking differences.
+
+Aside from the data preparation, the analysis will be the same as the previous section.
+
+
+```{r malefemale2}
+salt_imputed <- rbind(salt1990, salt2010)
+salt_imputed <- salt_imputed %>% filter(!is.na(e0_M) & !is.na(e0_F))
+male <- dplyr::select(salt_imputed, e0_M, Na_M, etohM, pc_gdp)
+colnames(male) <- gsub("_?M", "", colnames(male))
+female <- dplyr::select(salt_imputed,  e0_F, Na_F, etohF, pc_gdp)
+colnames(female) <- gsub("_?F", "", colnames(female))
+tobacco <- salt_imputed$smoking
+```
+
+
+## Results
+
+### Unadjusted correlation
+We look at the correlation between tobacco consumption and life expectancy at age 30.
+
+```{r unadjusted2}
+unadjusted_corr_M <- permu_pearson(prediction = male$e0, response = 0, treatment = tobacco, iters = 10000)
+unadjusted_corr_F <- permu_pearson(prediction = female$e0, response = 0, treatment = tobacco, iters = 10000)
+```
+```{r unadj_table2, echo=FALSE}
+res_table_unadj <- data.frame(rbind(c(unadjusted_corr_M$estimate, unadjusted_corr_M$pvalue), c(unadjusted_corr_F$estimate, unadjusted_corr_F$pvalue)))
+rownames(res_table_unadj) <- c("Male", "Female"); colnames(res_table_unadj) <- c("Estimate", "Upper p", "Lower p", "Two-sided p")
+print(res_table_unadj)
+```
+
+### Adjusted for alcohol consumption
+
+Next, we predict life expectancy using alcohol consumption and per capita GDP. We look at the correlation between the residuals (predicted - actual life expectancy) and alcohol consumption.
+```{r modeling_etoh2, results='hold'}
+cat('Model selection: male \n')
+mod_M_1 <- male %>% select(-Na) %>% choose_model()
+pred_M_1 <- predict(mod_M_1, male)
+res_M_1 <- permu_pearson(prediction = pred_M_1, response = male$e0, treatment = tobacco, iters = 10000)
+cat('Model selection: female \n')
+mod_F_1 <- female %>% select(-Na) %>% choose_model()
+pred_F_1 <- predict(mod_F_1, female)
+res_F_1 <- permu_pearson(prediction = pred_F_1, response = female$e0, treatment = tobacco, iters = 10000)
+```
+```{r adj_etoh_table2, echo=FALSE}
+res_table_etoh <- data.frame(rbind(c(res_M_1$estimate, res_M_1$pvalue), c(res_F_1$estimate, res_F_1$pvalue)))
+rownames(res_table_etoh) <- c("Male", "Female"); colnames(res_table_etoh) <- c("Estimate", "Upper p", "Lower p", "Two-sided p")
+print(res_table_etoh)
+```
+
+### Adjusted for sodium consumption and alcohol consumption
+
+Finally, we predict life expectancy using per capita GDP, sodium consumption, and alcohol consumption. We look at the correlation between the residuals (predicted - actual life expectancy) and alcohol consumption.
+
+```{r modeling_na_etoh2, results='hold'}
+cat('Model selection: male \n')
+mod_M <- male %>% choose_model()
+pred_M <- predict(mod_M, male)
+res_M <- permu_pearson(prediction = pred_M, response = male$e0, treatment = tobacco, iters = 10000)
+cat('Model selection: female \n')
+mod_F <- female %>% choose_model()
+pred_F <- predict(mod_F, female)
+res_F <- permu_pearson(prediction = pred_F, response = female$e0, treatment = tobacco, iters = 10000)
+```
+```{r na_etoh_table2, echo=FALSE}
+res_table_na_etoh <- data.frame(rbind(c(res_M$estimate, res_M$pvalue), c(res_F$estimate, res_F$pvalue)))
+rownames(res_table_na_etoh) <- c("Male", "Female"); colnames(res_table_na_etoh) <- c("Estimate", "Upper p", "Lower p", "Two-sided p")
+print(res_table_na_etoh)
+```
+
+
+
+### R and package versions used
+```{r sessionInfo, include=TRUE, echo=TRUE, results='markup'}
+sessionInfo()
+```
+
+
