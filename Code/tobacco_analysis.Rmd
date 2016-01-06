@@ -1,5 +1,5 @@
 # Test for association between tobacco consumption and life expectancy, from 1990 to 2010
-**Last edited: May 20, 2015**
+**Last edited: December 22, 2015**
 
 **Kellie Ottoboni**
 
@@ -35,13 +35,13 @@ salt$popF_prop[is.na(salt$popF)] <- 0.5; salt$popM_prop[is.na(salt$popM)] <- 0.5
 salt$etohboth <- ifelse(is.na(salt$etohboth), salt$popM_prop*salt$etohM + salt$popF_prop*salt$etohF, salt$etohboth)
 
 salt <- arrange(salt, country, year)
-salt_filt <- dplyr::select(salt, country, country_name_p, e0_M, e0_F, year, Na_M, Na_F, etohboth, etohM, etohF, pc_gdp, popM_prop, popF_prop, smoking_M, smoking_F)
+salt_filt <- dplyr::select(salt, country, country_name_p, e0_M, e0_F, year, Na_M, Na_F, etohboth, etohM, etohF, pc_gdp, popM_prop, popF_prop)
 
 salt2010 <- filter(salt_filt, year == 2010)
 salt2010 <- merge(smoke, salt2010)
 salt2010 <- dplyr::select(salt2010, -annual_pc_smoking_1990, -country_name_p) %>% mutate(smoking = annual_pc_smoking_2010) %>% dplyr::select(-annual_pc_smoking_2010)
-etohM_mod <- lm(etohM~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt2010)
-etohF_mod <- lm(etohF~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt2010)
+etohM_mod <- lm(etohM~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking, data = salt2010)
+etohF_mod <- lm(etohF~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking, data = salt2010)
 twn <- which(is.na(salt2010$etohM))
 salt2010[twn, "etohM"] <- predict(etohM_mod, salt2010[twn,]); salt2010[twn, "etohF"] <- predict(etohF_mod, salt2010[twn,])
 salt2010[twn, "etohboth"] <- (salt2010$popM_prop*salt2010$etohM + salt2010$popF_prop*salt2010$etohF)[twn]
@@ -49,7 +49,7 @@ salt2010[twn, "etohboth"] <- (salt2010$popM_prop*salt2010$etohM + salt2010$popF_
 salt1990 <- filter(salt_filt, year == 1990)
 salt1990 <- merge(smoke, salt1990)
 salt1990 <- dplyr::select(salt1990, -annual_pc_smoking_2010, -country_name_p)  %>% mutate(smoking = annual_pc_smoking_1990) %>% dplyr::select(-annual_pc_smoking_1990)
-etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking_M + smoking_F + smoking, data = salt1990)
+etohboth_mod <- lm(etohboth ~ e0_M + e0_F + Na_M + Na_F + pc_gdp + smoking, data = salt1990)
 twn <- which(is.na(salt1990$etohboth))
 salt1990[twn, "etohboth"] <- predict(etohboth_mod, salt1990[twn,])
 salt1990$etohM     <- salt1990$etohboth * (salt2010$etohM)/(salt2010$popM_prop*salt2010$etohM+salt2010$popF_prop*salt2010$etohF)
@@ -92,7 +92,7 @@ print(res_table_unadj)
 
 ### Adjusted for alcohol consumption
 
-Next, we predict change in life expectancy using per capita GDP and alcohol consumption. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in tobacco consumption.
+Next, we predict change in life expectancy using per capita GDP and alcohol consumption. We look at the correlation between the excess mortality (predicted - actual change in life expectancy) and change in tobacco consumption.
 ```{r modeling_etoh, results='hold'}
 cat('Model selection: male \n')
 mod_M_1 <- male %>% select(-Na) %>% choose_model()
@@ -111,7 +111,7 @@ print(res_table_etoh)
 
 ### Adjusted for sodium consumption and alcohol consumption
 
-Finally, we predict change in life expectancy using per capita GDP, Na+ consumption, and alcohol consumption. We look at the correlation between the residuals (predicted - actual change in life expectancy) and change in alcohol consumption.
+Finally, we predict change in life expectancy using per capita GDP, Na+ consumption, and alcohol consumption. We look at the correlation between the excess mortality (predicted - actual change in life expectancy) and change in tobacco consumption.
 
 ```{r modeling_na_etoh, results='hold'}
 cat('Model selection: male \n')
@@ -165,7 +165,7 @@ dev.off()
 # Absolute associations
 The previous analysis accounted for changes in life expectancy and in sodium, alcohol, and tobacco consumption from 1990 to 2010. We also want to look at the correlation between smoking and life expectancy at a fixed point in time, rather than taking differences.
 
-Aside from the data preparation, the analysis will be the same as the previous section.
+Aside from the data preparation, the analysis is the same as the previous section.
 
 
 ```{r malefemale2}
@@ -196,7 +196,7 @@ print(res_table_unadj)
 
 ### Adjusted for alcohol consumption
 
-Next, we predict life expectancy using alcohol consumption and per capita GDP. We look at the correlation between the residuals (predicted - actual life expectancy) and alcohol consumption.
+Next, we predict life expectancy using alcohol consumption and per capita GDP. We look at the correlation between the excess mortality (predicted - actual life expectancy) and tobacco consumption.
 ```{r modeling_etoh2, results='hold'}
 cat('Model selection: male \n')
 mod_M_1 <- male %>% select(-Na) %>% choose_model()
@@ -215,7 +215,7 @@ print(res_table_etoh)
 
 ### Adjusted for sodium consumption and alcohol consumption
 
-Finally, we predict life expectancy using per capita GDP, sodium consumption, and alcohol consumption. We look at the correlation between the residuals (predicted - actual life expectancy) and alcohol consumption.
+Finally, we predict life expectancy using per capita GDP, sodium consumption, and alcohol consumption. We look at the correlation between the excess mortality (predicted - actual life expectancy) and tobacco consumption.
 
 ```{r modeling_na_etoh2, results='hold'}
 cat('Model selection: male \n')
