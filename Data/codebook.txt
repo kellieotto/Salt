@@ -3,13 +3,15 @@
 Codebook for Na+ project
 ----------------------------------------------------------------------------
 
-TO: Philip + Student
+TO: Philip + Kellie
 FROM: Andrew + Crystal
 RE: Na+ & Mortality
 ----------------------------------------------------------------------------
 ----------------------------------------------------------------------------
 
 VARIABLE NAME : Description
+
+omnibus_data.csv
 ----------------------------------------------------------------------------
 country: 3-6 alpha string, country ID as used by HMD (mortality data source)
 
@@ -93,3 +95,34 @@ popM: Same as popM, but for males.
 sqrt_pc_gdp: sqrt(pc_gdp)
 
 log_pc_gdp: natural log(pc_gdp)
+
+----------------------------------------------------------------------------
+
+Data hand-entered from Ng et al (2014), Appendix Table 14
+
+smoking_t14.csv
+----------------------------------------------------------------------------
+
+country_name_p: Full country name string (some with embedded spaces)
+
+total_consump_1980: Total number of cigarettes consumed in 1980
+
+annual_pc_smoking_1980: Cigarettes per capita annually in 1980
+
+daily_per_smoker_1980: Cigarettes smoked daily per smoker in 1980
+
+total_consump_1996: Total number of cigarettes consumed in 1996
+
+annual_pc_smoking_1996: Cigarettes per capita annually in 1996
+
+daily_per_smoker_1996: Cigarettes smoked daily per smoker in 1996
+
+total_consump_2006: Total number of cigarettes consumed in 2006
+
+annual_pc_smoking_2006: Cigarettes per capita annually in 2006
+
+daily_per_smoker_2006: Cigarettes smoked daily per smoker in 2006
+
+annual_pc_smoking_1990: Lagged cigarette per capita annually in 1990 (taken from 1980)
+
+annual_pc_smoking_2010: Lagged cigarette per capita annually in 2010 (average of 1996 and 2006)
