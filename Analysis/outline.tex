@@ -1,0 +1,151 @@
+\documentclass[12pt]{article}
+\usepackage[breaklinks=true]{hyperref}
+\usepackage{color}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{natbib}
+\usepackage[margin=0.75in]{geometry}
+\usepackage[singlespacing]{setspace}
+\usepackage[bottom]{footmisc}
+\usepackage{floatrow}
+\usepackage{float,graphicx}
+\usepackage{enumerate}
+
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+
+
+\newcommand{\todo}[1]{{\color{red}{TO DO: \sc #1}}}
+
+\newcommand{\reals}{\mathbb{R}}
+\newcommand{\integers}{\mathbb{Z}}
+\newcommand{\naturals}{\mathbb{N}}
+\newcommand{\rationals}{\mathbb{Q}}
+
+\newcommand{\ind}{\mathbb{I}} % Indicator function
+\newcommand{\pr}{\mathbb{P}} % Generic probability
+\newcommand{\ex}{\mathbb{E}} % Generic expectation
+\newcommand{\var}{\textrm{Var}}
+\newcommand{\cov}{\textrm{Cov}}
+
+\newcommand{\normal}{N} % for normal distribution 
+\newcommand{\eps}{\varepsilon}
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
+\newcommand{\argmax}{\textrm{argmax}}
+\newcommand{\argmin}{\textrm{argmin}}
+
+\newcommand{\bit}{\begin{itemize}}
+\newcommand{\eit}{\end{itemize}}
+
+\title{Analysis Methods for Salt and Mortality}
+\author{Kellie Ottoboni}
+\date{Draft \today}
+\begin{document}
+\maketitle
+
+%\newpage
+
+%\begin{abstract}
+
+
+%\end{abstract}
+
+%\newpage
+
+\bit
+\item \textbf{Generalized matching}
+We may be able to do some form of our original idea.
+
+Hirano and Imbens (2004) introduce the idea of a \textit{generalized propensity score} for continuous treatments.
+% http://scholar.harvard.edu/files/imbens/files/hir_07feb04.pdf?m=1360041978
+% there is probably a more recent paper on this
+They assume \textit{weak unconfoundedness}:
+\begin{assumption}[Weak unconfoundedness] $Y(t) \independent T \mid X \text{ for all } t \in T$.
+\end{assumption}
+This essentially means that we've accounted for all potential confounders in $X$.
+Then, they define the generalized propensity score:
+
+\begin{definition}[Generalized propensity score]
+Let $r(t, x)$ be the conditional densityof the treatment given the covariates:$$r(t, x) = f_{T | X} (t|x).$$ 
+Then the generalized propensity score is $R = r(T, X)$.
+\end{definition}
+
+The generalized propensity score has the following mechanical property:
+
+$$X \independent \ind\{T = t\} \vert r(t, X)$$
+This means that treatment assignment is unconfounded given the generalized propensity score.
+Practically speaking, within strata of units with the same $r(T, X)$, treatment assignment is exchangeable.
+This suggests a two step procedure to conduct a permutation test for the effect of treatment:
+\begin{enumerate}
+\item Estimate the generalized propensity score using a tree-based method, where leaves of the tree form strata with the same generalized propensity score.
+\item Do a stratified permutation test for correlation between treatment and outcomes.
+\end{enumerate}
+
+We could do the same thing using the prognostic score (Hansen, 2008).
+This is essentially what we did for model-based matching, but we don't need to subtract off the prediction.
+
+I suggest that we do both: a stratified permutation test based on the generalized propensity score and another based on the predicted prognostic score.
+
+\item \textbf{Ordinary linear regression}
+\bit
+\item We clearly don't want to assume selection on observables: alcohol consumption, GDP, and smoking levels clearly aren't the only factors that account for a country's life expectancy at age 30.
+\item This isn't a random experiment, so running a regression won't give us a causal estimate of anything.
+\item What we can do, however, is look at some measure of goodness of fit, with and without salt in the regression.
+\eit
+\item \textbf{Breiman's variable importance}
+\bit
+\item What Breiman suggests (I need to find a reference -- I think it's in the Two Cultures paper) is to compute goodness of fit (root mean squared prediction error) for the true model as a baseline.
+Then, permute the variable of interest, breaking any association between the variable and the other covariates and outcome.
+Refit the model using the permuted predictor and recompute the RMSE.
+Do this many times to get a distribution of RMSEs.
+\todo{Is this a valid permutation test? Are things actually exchangeable? If not, maybe that's okay -- we're not trying to control any error rate, we just want some measure of importance and a p-value can serve as one.}
+\item We can do this for each of the predictors, so we can see the relative importance of each in the model. 
+For example, we'd hope to see a big decrease in RMSE when we perturb GDP and a relatively smaller decrease in RMSE when we perturb salt.
+\item Of course, this will depend on the model we choose. 
+We should do this procedure for a variety of models to give evidence that salt is consistently less important than other variables, independent of the choice of model.
+I suggest doing it for OLS, CART, random forests, \todo{what else?}
+\eit
+\item \textbf{Econometric linear models}
+\bit
+\item Fixed effects: 
+To account for unobserved confounding variables, we will add a fixed effect term for each country.
+The key assumption (aside from the usual linear model/response schedule assumptions) is that these country-specific effects do not change over time; all that changes is the treatment over time.
+This amounts to estimating a different intercept for each country.
+We need to correct the standard errors when we estimate this way by using the Huber-White Sandwich estimator.
+Let the subscript $i$ denote country and $t$ denote time period.
+The model is
+
+$$Y_{it} = \alpha_i + \lambda_t + \beta_1\text{GDP}_{it} +  \beta_2\text{ETOH}_{it} +  \beta_3\text{SMOKE}_{it} + \gamma\text{NA}_{it} + \eps_{it}$$
+$\alpha_i$ is the fixed effect for country $i$.
+$\lambda_t$ is a time effect.
+We're interested in the parameter $\gamma$.
+\item Differenced estimator:
+We have measurements from 1990 and 2010 for each country.
+If we take the difference, we can estimate instead
+
+$$\Delta Y_{it} =  \Delta \lambda_t + \beta_1\Delta \text{GDP}_{i} +  \beta_2\Delta \text{ETOH}_{i} +  \beta_3\Delta \text{SMOKE}_{i} + \gamma\Delta \text{NA}_{i} + \Delta \eps_{i}$$
+This eliminates the need for the fixed effects.
+However, this model assumes constant additive treatment effects.
+In particular,
+\begin{enumerate}
+\item Any country that increases its Na+ consumption by 1 unit will shift its life expectancy by $\gamma$.
+\item Trends in life expectancy would be the same in all countries in the absence of treatment (salt consumption).
+\end{enumerate}
+The second point makes more sense in the context of binary treatments than here (but perhaps there's a more sensible way of putting it that clarifies the point).
+\item For this to have a causal interpretation, we need salt consumption to be assigned to countries at random, conditional on GDP, ETOH, and smoking levels.
+We clearly don't have this.
+I'm wondering if it would still be useful to do this, with the major caveat that we're letting go of causal interpretations.
+\eit
+\eit
+
+%\bibliographystyle{plainnat}
+%\bibliography{refs}
+
+
+\end{document}
