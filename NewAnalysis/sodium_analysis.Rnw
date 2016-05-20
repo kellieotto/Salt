@@ -1,16 +1,29 @@
-# Test for association between Na+ consumption and life expectancy, from 1990 to 2010
-**Last edited: May 16, 2016**
+\documentclass[11pt]{article}
+\title{Test for association between Na+ consumption and life expectancy, from 1990 to 2010}
+\author{Kellie Ottoboni}
 
-**Kellie Ottoboni**
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx,float}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{bm}
+\usepackage[backend=bibtex]{biblatex}
+\usepackage{hyperref}
 
-```{r knitr_options, include=FALSE}
+
+
+\begin{document}
+
+\maketitle
+\section{Introduction}
+
+<<knitr_options, include=FALSE>>=
 library(knitr)
 library(xtable)
 opts_chunk$set(fig.width=12, fig.height=4, fig.path='RmdFigs/',
-               warning=FALSE, message=FALSE)
-```
+               warning=FALSE, message=FALSE, echo=FALSE)
+@
 
-```{r load_data}
+<<load_data>>=
 set.seed(38)
 library(dplyr)
 library(reshape2)
@@ -22,19 +35,19 @@ library(lmtest)
 library(plm)
 library(stargazer)
 library(rpart)
-```
+@
 
-## Data cleaning
+\section{Data cleaning}
 
 We need to clean up the data. This includes removing unwanted variables (we keep per capita GDP, alcohol consumption, and per capita cigarette consumption only) and imputing the missing values of the predictors. In particular:
 
-* We merge two data sources. One contains the economic variables, life expectancy, alcohol, and sodium consumption. The other contains the annual number of cigarettes smoked per capita.
+\begin{itemize}
+\item We merge two data sources. One contains the economic variables, life expectancy, alcohol, and sodium consumption. The other contains the annual number of cigarettes smoked per capita.
+\item We impute the missing 2010 sex-specific alcohol consumption for Taiwan using a linear regression of male and female life expectancy, male and female salt consumption, per capita GDP, and per capita annual cigarette consumption on sex-specific alcohol consumption. Then we impute population average alcohol consumption by taking a weighted average of male and female alcohol consumption, using the proportion of the population that is male/female as the weights.
+\item We impute the missing 1990 overall alcohol consumption for Taiwan in the same way as before, regressing predictors on overall alcohol consumption. Then we use the proportion of alcohol consumption in 2010 attributable to males and females to estimate the male and female sex-specific alcohol consumption in 1990, respectively.
+\end{itemize}
 
-* We impute the missing 2010 sex-specific alcohol consumption for Taiwan using a linear regression of male and female life expectancy, male and female salt consumption, per capita GDP, and per capita annual cigarette consumption on sex-specific alcohol consumption. Then we impute population average alcohol consumption by taking a weighted average of male and female alcohol consumption, using the proportion of the population that is male/female as the weights.
-
-* We impute the missing 1990 overall alcohol consumption for Taiwan in the same way as before, regressing predictors on overall alcohol consumption. Then we use the proportion of alcohol consumption in 2010 attributable to males and females to estimate the male and female sex-specific alcohol consumption in 1990, respectively.
-
-```{r impute}
+<<impute>>=
 salt <- read.table("../Data/omnibus_data.csv", sep = "\t", header = TRUE)
 salt <- salt %>% mutate("etoh_M" = etohM, "etoh_F" = etohF)
 smoke <- read.table("../Data/smoking_t14.csv", sep = ",", header = TRUE)
@@ -65,9 +78,9 @@ twn <- which(is.na(salt1990$etohboth))
 salt1990[twn, "etohboth"] <- predict(etohboth_mod, salt1990[twn,])
 salt1990$etoh_M     <- salt1990$etohboth * (salt2010$etoh_M)/(salt2010$popM_prop*salt2010$etoh_M+salt2010$popF_prop*salt2010$etoh_F)
 salt1990$etoh_F     <- salt1990$etohboth * (salt2010$etoh_F)/(salt2010$popM_prop*salt2010$etoh_M+salt2010$popF_prop*salt2010$etoh_F)
-```
+@
 
-```{r malefemale_diff}
+<<malefemale_diff>>=
 countries <- salt2010$country
 salt_diff <- salt2010[,-1]-salt1990[,-1]
 salt_diff <- cbind(countries, salt_diff)
@@ -77,8 +90,8 @@ male_diff <- dplyr::select(salt_diff, e0_M, etoh_M, smoking, pc_gdp, Na_M)
 colnames(male_diff) <- gsub("_M", "", colnames(male_diff))
 female_diff <- dplyr::select(salt_diff,  e0_F, etoh_F, smoking, pc_gdp, Na_F)
 colnames(female_diff) <- gsub("_F", "", colnames(female_diff))
-```
-```{r malefemale_absolute}
+@
+<<malefemale_absolute>>=
 salt_absolute <- rbind(salt1990, salt2010)
 salt_absolute$year <- c(rep("1990", nrow(salt1990)), rep("2010", nrow(salt2010)))
 salt_absolute <- salt_absolute %>% filter(!is.na(e0_M) & !is.na(e0_F))
@@ -86,9 +99,9 @@ male_absolute <- dplyr::select(salt_absolute, e0_M, country, year, etoh_M, smoki
 colnames(male_absolute) <- gsub("_M", "", colnames(male_absolute))
 female_absolute <- dplyr::select(salt_absolute, e0_F, country, year, etoh_F, smoking, pc_gdp, Na_F)
 colnames(female_absolute) <- gsub("_F", "", colnames(female_absolute))
-```
+@
 
-## Variable importance
+\section{Variable importance}
 
 In his seminal paper on random forests, Leo Breiman introduced a variable importance measure based on permutations. The idea is that if a variable is important in a regression, then perturbing it will worsen the predictive performance. On the other hand, if we perturb a variable and the predictions remain relatively good, then the variable is not important to the model. We perturb the variables by permuting them, breaking the association between the feature and all other variables and the outcome.
 
@@ -96,7 +109,7 @@ Though the idea of permutation variable importance came from random forests, it 
 Consistently for different cuts of the data and different methods, sodium intake appears to be the least important predictor. However, sodium is more important than smoking when we look at the cross-sectional datasets using OLS with interactions.
 
 
-```{r variable_importance, echo=FALSE}
+<<variable_importance, echo=FALSE>>=
 compute_rmse <- function(prediction, truth){
   sqrt(mean((prediction-truth)^2, na.rm=TRUE))
 }
@@ -135,9 +148,9 @@ compute_variable_importance <- function(dataset){
   Xmat = dataset %>% dplyr::select(-e0)
   Y = dataset %>% dplyr::select(e0)
   model_list <- list(
-    "rf"               = randomForest(e0~., data = dataset),
-    "ols"              = lm(e0~., data = dataset),
-    "ols_interactions" = lm(e0~(.)^2, data = dataset)
+    "Random Forest"         = randomForest(e0~., data = dataset),
+    "OLS"                   = lm(e0~., data = dataset),
+    "OLS with interactions" = lm(e0~(.)^2, data = dataset)
   )
   lapply(model_list, function(mod) permutation_variable_importance(Xmat, Y, mod, nperm = 100))
 }
@@ -148,35 +161,35 @@ permutation_importance_table <- function(perm_imp, title){
   norm <- do.call(rbind, lapply(perm_imp, function(x) x[[2]]))
   norm <- round(norm, 3)
   p <- ncol(abs)
-  tab <- rbind(c("Absolute importance", rep("", p-1), "Normalized importance", rep("", p-1)), rep(colnames(abs, 2)), cbind(abs, norm))
+  tab <- rbind(c("Absolute", rep("", p-1), "Normalized", rep("", p-1)), rep(colnames(abs, 2)), cbind(abs, norm))
   rownames(tab)[1:2] <- c("", "Variable")
   print(xtable(tab, align = "r|llll|llll",
                caption = title),
         include.rownames = TRUE,
         include.colnames = FALSE,
-        type="html")
-}
-```
+        hline.after = c(0, 1, nrow(tab)))
+} 
+@
+
+ 
+<<do_variable_importance, echo=FALSE, results = "asis", cache=TRUE>>=
+compute_variable_importance(male_diff) %>% permutation_importance_table(title = "Variable importance for males, differenced (2010-1990)")
+compute_variable_importance(female_diff) %>% permutation_importance_table(title = "Variable importance for females, differenced (2010-1990)")
+compute_variable_importance(male_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for males, cross-sectional")
+compute_variable_importance(female_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for females, cross-sectional")
+@
 
 
-```{r do_variable_importance, echo=FALSE, results = "asis", cache=TRUE}
-compute_variable_importance(male_diff) %>% permutation_importance_table(title = "Male, Differenced")
-compute_variable_importance(female_diff) %>% permutation_importance_table(title = "Female, Differenced")
-compute_variable_importance(male_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Male, Absolute")
-compute_variable_importance(female_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Female, Absolute")
+\subsection{Conditional Variable Importance}
 
-```
-
-## Conditional Variable Importance
-
-We may want to do the conditional permutation tests in this paper: http://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-307
+We may want to do the conditional permutation tests in this paper: \url{http://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-307}.
 They first use cart to partition the observations according to the other covariates, then permute within those groups instead of permuting everything.
 This is supposed to account for dependence between features.
 
 
-## Linear models
+\section{Linear models}
 
-```{r linear_models, echo=FALSE}
+<<linear_models, echo=FALSE>>=
 
 compute_linear_models_differenced <- function(dataset){
   # Takes in a dataset of differenced measures
@@ -235,7 +248,7 @@ compute_fixed_effects <- function(dataset){
     "fixed effects" = fe
   ))
 }
-```
+@
 First, we look at conventional linear models for the differenced data. We report usual OLS standard errors as well as Huber-White robust standard errors.
 If salt were detrimental, then we'd expect to see a negative coefficient in the linear model.
 We do observe a negative coefficient for males, when we don't include any other variables in the model.
@@ -245,18 +258,16 @@ For males, a one unit increase in sodium consumption from 1990 to 2010 is associ
 For females, it's associated with a $2.073$ year increase in life expectancy between 1990 and 2010 (significant at 10\% level).
 
 
-```{r do_linear_models, results="asis", echo=FALSE, cache=TRUE}
-compute_linear_models_differenced(male_diff) %>% stargazer(type = "html", 
-                                                           style = "qje",
+<<do_linear_models, results="asis", echo=FALSE, cache=TRUE>>=
+compute_linear_models_differenced(male_diff) %>% stargazer(style = "qje",
                                                            title = "Male, Differenced",
                                                            column.labels = rep(c("OLS", "Robust"), 4),
                                                            notes = "")
-compute_linear_models_differenced(female_diff) %>% stargazer(type = "html", 
-                                                           style = "qje",
+compute_linear_models_differenced(female_diff) %>% stargazer(style = "qje",
                                                            title = "Female, Differenced",
                                                            column.labels = c("OLS", "Robust"),
                                                            notes = "")
-```
+@
 
 Next, we look at the data cross-sectionally instead of taking the difference over time.
 Again, if salt were detrimental to health, we'd expect it to have a negative coefficient in the linear model.
@@ -265,20 +276,22 @@ In the OLS models, salt has no significant assoiation with life expectancy.
 In the full fixed effects model, for males, a one unit increase in sodium consumption is associated with an increase in life expectancy of $3.004$ years (significant at 10\% level).
 For females, it's associated with a $6.06$ year increase in life expectancy (significant at 1\% level).
 
-```{r do_fixed_effects, results="asis", echo=FALSE, cache=TRUE}
-compute_fixed_effects(male_absolute) %>% stargazer(type = "html", 
-                                                           style = "qje",
-                                                           title = "Male, Absolute",
-                                                           column.labels = c("Fixed Effects","Fixed Effects","Fixed Effects","OLS", "Robust", "Fixed Effects"),
-                                                           notes = "")
-compute_fixed_effects(female_absolute) %>% stargazer(type = "html", 
-                                                           style = "qje",
-                                                           title = "Female, Absolute",
-                                                           column.labels = c("Fixed Effects","Fixed Effects","Fixed Effects","OLS", "Robust", "Fixed Effects"),
-                                                           notes = "")
-```
+<<do_fixed_effects, results="asis", echo=FALSE, cache=TRUE>>=
+compute_fixed_effects(male_absolute) %>% stargazer(style = "qje",
+                                                   title = "Male, Absolute",
+                                                   column.labels = c("Fixed Effects","Fixed Effects","Fixed Effects","OLS", "Robust", "Fixed Effects"),
+                                                   notes = "")
+compute_fixed_effects(female_absolute) %>% stargazer(style = "qje",
+                                                     title = "Female, Absolute",
+                                                     column.labels = c("Fixed Effects","Fixed Effects","Fixed Effects","OLS", "Robust", "Fixed Effects"),
+                                                     notes = "")
+@
 
-## Permutation Tests
+\section{Permutation Tests}
+
+We conduct permutation tests for the association between sodium consumption and life expectancy, and compare those results to the same tests of correlation using each of the other variables in place of sodium.
+This data is observational, not randomized, so observations are not exchangeable without some assumptions.
+
 
 TODO: Prose
 *Use a linear probability model for the probability of treatment given covariates. We assume normality, but could fit different distributions by maximum likelihood if desired.
@@ -286,7 +299,7 @@ TODO: Prose
 *Using CART with the covariates, block on the generalized propensity score.
 TODO: implement balance tests within strata. This is the same as what we want to do for salt, just on the other covariates.
 
-```{r generalized_matching_tests, echo=FALSE}
+<<generalized_matching_tests, echo=FALSE>>=
 compute_prognostic_score <- function(outcome, covariates){
   dataset <- cbind(outcome, covariates)
   colnames(dataset)[1] <- "outcome"
@@ -407,9 +420,9 @@ compute_correlations <- function(outcome, variables){
   return(correlations)
 }
 
-```
+@
 
-```{r do_corr_plots, echo=FALSE, cache=TRUE}
+<<do_corr_plots, echo=FALSE, cache=TRUE>>=
 set.seed(10101)
 cat("Male, Differenced. ")
 cat("Correlation with Life Expectancy at Age 30:")
@@ -434,9 +447,11 @@ cat("Correlation with Life Expectancy at Age 30:")
 print(compute_correlations(female_absolute$e0, female_absolute %>% select(-e0, -country, -year)))
 pvalues <- test_corr_strata(female_absolute$e0, female_absolute %>% select(-e0, -country, -year))
 plot_corr_pvalues(pvalues)
-```
-### R and package versions used
-```{r sessionInfo, include=TRUE, echo=TRUE, results='markup'}
-sessionInfo()
-```
+@
 
+\section{R and package versions used}
+<<sessionInfo, include=TRUE, echo=TRUE, results='markup'>>=
+sessionInfo()
+@
+
+\end{document}

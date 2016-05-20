@@ -5,5 +5,5 @@
 .synctex.gz
 .aux
 
-NewAnalysis/sodium_analysis_cache
-NewAnalysis/RmdFigs/
+NewAnalysis/cache
+NewAnalysis/figure
