@@ -13,12 +13,15 @@ opts_chunk$set(fig.width=12, fig.height=4, fig.path='RmdFigs/',
 ```{r load_data}
 set.seed(38)
 library(dplyr)
+library(reshape2)
+library(ggplot2)
 library(Hmisc)
 library(randomForest)
 library(sandwich)
 library(lmtest)
 library(plm)
 library(stargazer)
+library(rpart)
 ```
 
 ## Data cleaning
@@ -275,6 +278,163 @@ compute_fixed_effects(female_absolute) %>% stargazer(type = "html",
                                                            notes = "")
 ```
 
+## Permutation Tests
+
+TODO: Prose
+*Use a linear probability model for the probability of treatment given covariates. We assume normality, but could fit different distributions by maximum likelihood if desired.
+*Estimate the probability of treatment at that particular level for each observation. 
+*Using CART with the covariates, block on the generalized propensity score.
+TODO: implement balance tests within strata. This is the same as what we want to do for salt, just on the other covariates.
+
+```{r generalized_matching_tests, echo=FALSE}
+compute_prognostic_score <- function(outcome, covariates){
+  dataset <- cbind(outcome, covariates)
+  colnames(dataset)[1] <- "outcome"
+  mod <- rpart(outcome~., dataset)
+  return(predict(mod))
+}
+
+compute_gps <- function(dataset, treatment = "Na"){
+  # Pass in the name of the treatment var as a string
+  if(any(colnames(dataset) == "e0")){dataset <- dataset %>% select(-e0)}
+  if(any(colnames(dataset) == "country")){dataset <- dataset %>% select(-country)}
+  if(any(colnames(dataset) == "year")){dataset <- dataset %>% select(-year)}
+  
+  # Model Na as Normal(Xbeta, sigma^2)
+  formula <- as.formula(paste(treatment, "~.", collapse = ""))
+  mod <- lm(formula, dataset)
+  sigmahat <- summary(mod)$sigma
+  mu <- predict(mod)
+  # Find probability of the observed Na given the model and X
+  gps <- pnorm(dataset$Na, mu, sigmahat)
+  # Use a tree to partition
+  gps_blocking <- rpart(gps~., data = cbind(dataset, gps) %>% select(-Na))
+  return(predict(gps_blocking))
+}
+
+predictions_to_strata <- function(pred){
+  return(rank(pred))
+}
+
+within_group_corr <- function(strata, variable, treatment){
+  groups <- sort(unique(strata))
+  sapply(groups, function(g){
+    index <- which(strata == g)
+    return(abs(cor(variable[index], treatment[index])))
+  })
+}
+
+permute_within_groups <- function(strata, treatment){
+  permuted <- treatment
+  groups <- sort(unique(strata))
+  for(g in groups){
+    permuted[strata==g] <- sample(treatment[strata==g])
+  }
+  return(permuted)
+}
+
+
+# Carry out a stratified permutation test for the Pearson correlation between a variable and treatment.
+#
+# strata = vector of stratum assignments
+# variable = vector of the variable of interest
+# treatment = vector of treatments
+# iters = The number of Monte Carlo iterations (default 1000)
+#
+# Returns a list containing the results: attributes estimate (the estimated sum of abs correlations), distr (simulated permutation distribution), and pvalue (p-value for the test)
+permu_pearson <- function(strata, variable, treatment, iters = 1000){
+  weights <- table(strata)/length(variable)
+  obs <- sum(within_group_corr(strata, variable, treatment)*weights)
+  distr <- replicate(iters, {
+    tr <- permute_within_groups(strata, treatment)
+    sum(within_group_corr(strata, variable, tr)*weights)
+  })
+  pval <- sum(distr >= obs)/iters
+  return(list("estimate" = obs, "distr" = distr, "pvalue" = pval))
+}
+
+
+test_corr_strata <- function(outcome, dataset, iters = 1000){
+  # Loop through all the covariates in dataset and test for correlation using the GPS and prognostic score
+  pvalues <- matrix(NA, ncol = 2, nrow = ncol(dataset))
+  rownames(pvalues) <- colnames(dataset)
+  colnames(pvalues) <- c("Generalized Propensity Score", "Prognostic Score")
+  for(j in seq_len(ncol(dataset))){
+    treat <- dataset[,j]
+    name_treat <- colnames(dataset)[j]
+    vars  <- dataset[,-j]
+    # GPS
+    pred <- compute_gps(dataset, treatment = name_treat)
+    strata <- predictions_to_strata(pred)
+    pvalues[j, 1] <- permu_pearson(strata, outcome, treat, iters = iters)$pvalue
+    # Prognostic score
+    pred <- compute_prognostic_score(outcome, dataset)
+    strata <- predictions_to_strata(pred)
+    pvalues[j, 2] <- permu_pearson(strata, outcome, treat, iters = iters)$pvalue
+  }
+  return(pvalues)
+}
+
+plot_corr_pvalues <- function(pvalues){
+  # Create a plot of p-values
+
+  res2plot <- melt(pvalues)
+  colnames(res2plot) <- c("Variable", "Score", "pvalue")
+  
+  p <- ggplot(res2plot, aes(x = pvalue, y = Variable)) + 
+    geom_point(size = 5, aes(color=Score, shape=Score)) + 
+    geom_vline(xintercept = 0.05, linetype = "dotted") +   
+    geom_vline(xintercept = 0.1, linetype = "dotted") + 
+    xlab("P-value") + ylab("") +
+    ggtitle("P-value for Correlation with Life Expectancy at Age 30") +
+    theme_bw() + 
+    xlim(0, 0.8) +
+    scale_x_continuous(breaks = c(0, 0.05, 0.1, 0.25, 0.5, 0.75, 1)) +
+    theme(axis.text = element_text(size = 16)) +
+    theme(axis.title = element_text(size = 16)) +
+    theme(legend.text = element_text(size = 16)) + 
+    theme(title = element_text(size=20)) +
+    theme(legend.position = "bottom")
+  return(p)
+}
+
+compute_correlations <- function(outcome, variables){
+  correlations <- rep(NA, ncol(variables))
+  names(correlations) <- colnames(variables)
+  for(j in seq_len(ncol(variables))){
+    correlations[j] <- cor(outcome, variables[,j])
+  }
+  return(correlations)
+}
+
+```
+
+```{r do_corr_plots, echo=FALSE, cache=TRUE}
+set.seed(10101)
+cat("Male, Differenced. ")
+cat("Correlation with Life Expectancy at Age 30:")
+print(compute_correlations(male_diff$e0, male_diff %>% select(-e0)))
+pvalues <- test_corr_strata(male_diff$e0, male_diff %>% select(-e0))
+plot_corr_pvalues(pvalues)
+
+cat("Female, Differenced. ")
+cat("Correlation with Life Expectancy at Age 30:")
+print(compute_correlations(female_diff$e0, female_diff %>% select(-e0)))
+pvalues <- test_corr_strata(female_diff$e0, female_diff %>% select(-e0))
+plot_corr_pvalues(pvalues)
+
+cat("Male, Absolute. ")
+cat("Correlation with Life Expectancy at Age 30:")
+print(compute_correlations(male_absolute$e0, male_absolute %>% select(-e0, -country, -year)))
+pvalues <- test_corr_strata(male_absolute$e0, male_absolute %>% select(-e0, -country, -year))
+plot_corr_pvalues(pvalues)
+
+cat("Female, Absolute. ")
+cat("Correlation with Life Expectancy at Age 30:")
+print(compute_correlations(female_absolute$e0, female_absolute %>% select(-e0, -country, -year)))
+pvalues <- test_corr_strata(female_absolute$e0, female_absolute %>% select(-e0, -country, -year))
+plot_corr_pvalues(pvalues)
+```
 ### R and package versions used
 ```{r sessionInfo, include=TRUE, echo=TRUE, results='markup'}
 sessionInfo()
