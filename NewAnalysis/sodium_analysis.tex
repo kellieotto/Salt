@@ -48,29 +48,48 @@
 \newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
 
 \usepackage{alltt}
-\title{Test for association between Na+ consumption and life expectancy, from 1990 to 2010}
+\title{Analysis: Association between sodium consumption and life expectancy at age 30}
 \author{Kellie Ottoboni}
 
 \usepackage{amsmath,amssymb,amsthm}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{assumption}{Assumption}
+\newtheorem{definition}{Definition}
+
 \usepackage{graphicx,float}
 \usepackage[margin=0.75in]{geometry}
 \usepackage{bm}
 \usepackage[backend=bibtex]{biblatex}
 \usepackage{hyperref}
-\setlength{\parindent}{0cm}
+
+\newcommand{\ind}{\mathbb{I}} % Indicator function
+\newcommand{\pr}{\mathbb{P}} % Generic probability
+\newcommand{\ex}{\mathbb{E}} % Generic expectation
+\newcommand{\normal}{N} % for normal distribution 
+\newcommand{\eps}{\varepsilon}
+\newcommand\independent{\protect\mathpalette{\protect\independenT}{\perp}}
+\def\independenT#1#2{\mathrel{\rlap{$#1#2$}\mkern2mu{#1#2}}}
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \begin{document}
 
 \maketitle
+
+
+
+
 \section{Introduction}
-
-
-
-
-
+Idea: if salt is bad for you, then we'd expect 
+\begin{enumerate}
+\item ceteris paribus, salt would be negatively associated with life expectancy and the association would be statistically significant.
+\item salt would be a strong predictor of life expectancy after accounting for other important factors.
+\end{enumerate}
+We assess these points in a variety of ways below.
+We find that neither point is satisified.
+Sodium consumption is not significantly negatively correlated with life expectancy, and it isn't a strong predictor of life expectancy after accounting for alcohol consumption, cigarette consumption, and per capita GDP.
 \section{Data cleaning}
 
-We need to clean up the data. This includes removing unwanted variables (we keep per capita GDP, alcohol consumption, and per capita cigarette consumption only) and imputing the missing values of the predictors. In particular:
+Data preprocessing includes removing unwanted variables (we keep per capita GDP, alcohol consumption, and per capita cigarette consumption only) and imputing the missing values of the predictors. In particular:
 
 \begin{itemize}
 \item We merge two data sources. One contains the economic variables, life expectancy, alcohol, and sodium consumption. The other contains the annual number of cigarettes smoked per capita.
@@ -82,13 +101,127 @@ We need to clean up the data. This includes removing unwanted variables (we keep
 
 
 
+\section{Correlations}
+\subsection{Raw Correlations}
+First, we report the raw correlations between life expectancy at age 30 and each of the predictors.
+This does not control for correlations between predictors.
+It is the crudest measure.
+Table TODO shows these correlations.
+For alcohol, smoking, and per capita GDP, the sign of the correlations are consistent across all four cuts of the data and are consistent with our expectations.
+Sodium is negatively associated with life expectancy for males but positively associated for females.
 
+% latex table generated in R 3.2.0 by xtable 1.8-0 package
+% Fri May 20 15:39:08 2016
+\begin{table}[ht]
+\centering
+\begin{tabular}{r|rr|rr}
+   \hline
+ & Male &  & Female &  \\ 
+   \hline
+   & Differenced & Cross-sectional & Differenced & Cross-sectional \\ 
+   \hline
+etoh & -0.74 & -0.36 & -0.55 & -0.02 \\ 
+  smoking & -0.41 & -0.11 & -0.18 & -0.14 \\ 
+  pc\_gdp & 0.49 & 0.73 & 0.37 & 0.71 \\ 
+  Na & -0.41 & -0.11 & 0.05 & 0.1 \\ 
+   \hline
+\end{tabular}
+\end{table}
+
+
+\subsection{Permutation Tests}
+We'd like to assess how significantly correlated each variable is with life expectancy, accounting for the other confounding variables.
+We do this by conducting stratified permutation tests.
+This data is observational, not randomized, so observations are not exchangeable without some assumptions.
+We use the idea of a balancing score from Rosenbaum and Rubin (1983).
+A balancing score is a function $b(X)$ of the covariates $X$ that maeks treatment assignment $T$ conditionally independent of covariates:
+$$X \independent T \mid b(X)$$
+If we stratify on a balancing score, we may permute observations within strata.
+
+\subsection{Generalized Propensity Score}
+Hirano and Imbens (2004) introduce the idea of a \textit{generalized propensity score} for continuous treatments.
+% http://scholar.harvard.edu/files/imbens/files/hir_07feb04.pdf?m=1360041978
+% there is probably a more recent paper on this
+They assume \textit{weak unconfoundedness}:
+\begin{assumption}[Weak unconfoundedness] $Y(t) \independent T \mid X \text{ for all } t \in T$.
+\end{assumption}
+This essentially means that we've accounted for all potential confounders in $X$.
+Then, they define the generalized propensity score:
+
+\begin{definition}[Generalized propensity score]
+Let $r(t, x)$ be the conditional densityof the treatment given the covariates:
+$$r(t, x) = f_{T | X} (t|x).$$ 
+Then the generalized propensity score is $R = r(T, X)$.
+\end{definition}
+
+The generalized propensity score has the following mechanical property:
+
+$$X \independent \ind\{T = t\} \vert r(t, X)$$
+This means that treatment assignment is unconfounded given the generalized propensity score.
+Practically speaking, within strata of units with the same $r(T, X)$, treatment assignment is exchangeable.
+This suggests a two step procedure to conduct a permutation test for the effect of treatment:
+\begin{enumerate}
+\item Estimate the generalized propensity score using a linear probability model for treatment given covariates.
+Formally, $T \sim \normal(X\beta, \sigma^2)$.
+Then, for unit $i$, the GPS estimate is
+
+$$ R_i = \frac{1}{\sqrt{2\pi\hat{\sigma}^2}}\exp\left(-\frac{(T_i - x_i'\hat{\beta})^2}{2\hat{\sigma}^2}\right)$$
+Note, we could fit distributions other than the normal by maximum likelihood if desired. 
+\item Create a regression tree to predict the GPS $R$ using the covariates $X$, so leaves of the tree form strata with similar GPSs.
+\item Do a stratified permutation test for correlation between treatment and outcomes.
+\end{enumerate}
+
+
+\subsection{Prognostic Score}
+\textcolor{red}{elaborate}
+We could do the same thing using the prognostic score (Hansen, 2008).
+This is essentially what we did for model-based matching, but we don't need to subtract off the prediction.
+
+
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
+\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots_m1-1} \caption[P-values for males, differenced (2010-1990)]{P-values for males, differenced (2010-1990).}\label{fig:do_corr_plots_m1}
+\end{figure}
+
+
+\end{knitrout}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
+\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots_f1-1} \caption[P-values for females, differenced (2010-1990)]{P-values for females, differenced (2010-1990).}\label{fig:do_corr_plots_f1}
+\end{figure}
+
+
+\end{knitrout}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
+\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots_m2-1} \caption[P-values for males, cross-sectional]{P-values for males, cross-sectional.}\label{fig:do_corr_plots_m2}
+\end{figure}
+
+
+\end{knitrout}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
+\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots_f2-1} \caption[P-values for females, cross-sectional]{P-values for females, cross-sectional.}\label{fig:do_corr_plots_f2}
+\end{figure}
+
+
+\end{knitrout}
+
+\newpage
 \section{Variable importance}
 
-In his seminal paper on random forests, Leo Breiman introduced a variable importance measure based on permutations. The idea is that if a variable is important in a regression, then perturbing it will worsen the predictive performance. On the other hand, if we perturb a variable and the predictions remain relatively good, then the variable is not important to the model. We perturb the variables by permuting them, breaking the association between the feature and all other variables and the outcome.
+In his seminal paper on random forests, Leo Breiman introduced a variable importance measure based on permutations. 
+The idea is that if a variable is important in a regression, then perturbing it will worsen the predictive performance. 
+On the other hand, if we perturb a variable and the predictions remain relatively good, then the variable is not important to the model. 
+We perturb the variables by permuting them, breaking the association between the feature and all other variables and the outcome.
 
-Though the idea of permutation variable importance came from random forests, it is sufficiently general that it can apply to any predictive model. We can use several metrics for this: we report the "absolute importance", the original prediction error minus average permuted prediction error, and the "normalized importance", the absolute importance divided by the original prediction error. Large values indicate more importance.
-Consistently for different cuts of the data and different methods, sodium intake appears to be the least important predictor. However, sodium is more important than smoking when we look at the cross-sectional datasets using OLS with interactions.
+Though the idea of permutation variable importance came from random forests, it is sufficiently general that it can apply to any predictive model. 
+We can use several metrics for this: 
+we report the ``absolute importance,'' the original prediction error minus average permuted prediction error, and the ``normalized importance,'' the absolute importance divided by the original prediction error. 
+Large values indicate more importance.
+Consistently for different cuts of the data and different methods, sodium intake appears to be the least important predictor. 
+However, sodium is more important than smoking when we look at the cross-sectional datasets using OLS with interactions.
 
 
 
@@ -167,7 +300,7 @@ We may want to do the conditional permutation tests in this paper: \url{http://b
 They first use cart to partition the observations according to the other covariates, then permute within those groups instead of permuting everything.
 This is supposed to account for dependence between features.
 
-
+\newpage
 \section{Linear models}
 
 
@@ -334,57 +467,6 @@ For females, it's associated with a $6.06$ year increase in life expectancy (sig
 \end{tabular} 
 \end{table} 
 
-
-\section{Permutation Tests}
-
-We conduct permutation tests for the association between sodium consumption and life expectancy, and compare those results to the same tests of correlation using each of the other variables in place of sodium.
-This data is observational, not randomized, so observations are not exchangeable without some assumptions.
-
-
-TODO: Prose
-*Use a linear probability model for the probability of treatment given covariates. We assume normality, but could fit different distributions by maximum likelihood if desired.
-*Estimate the probability of treatment at that particular level for each observation. 
-*Using CART with the covariates, block on the generalized propensity score.
-TODO: implement balance tests within strata. This is the same as what we want to do for salt, just on the other covariates.
-
-
-
-\begin{knitrout}
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
-\begin{verbatim}
-## Male, Differenced.
-## Correlation with Life Expectancy at Age 30:
-##       etoh    smoking     pc_gdp         Na 
-## -0.7416760 -0.4106223  0.4931724 -0.4139600
-\end{verbatim}
-\end{kframe}
-\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots-1} 
-\begin{kframe}\begin{verbatim}
-## Female, Differenced.
-## Correlation with Life Expectancy at Age 30:
-##        etoh     smoking      pc_gdp          Na 
-## -0.54964185 -0.17510685  0.37216856  0.05121131
-\end{verbatim}
-\end{kframe}
-\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots-2} 
-\begin{kframe}\begin{verbatim}
-## Male, Absolute.
-## Correlation with Life Expectancy at Age 30:
-##       etoh    smoking     pc_gdp         Na 
-## -0.3619324 -0.1126294  0.7331833 -0.1094327
-\end{verbatim}
-\end{kframe}
-\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots-3} 
-\begin{kframe}\begin{verbatim}
-## Female, Absolute.
-## Correlation with Life Expectancy at Age 30:
-##        etoh     smoking      pc_gdp          Na 
-## -0.01617010 -0.13826388  0.71470742  0.09618208
-\end{verbatim}
-\end{kframe}
-\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots-4} 
-
-\end{knitrout}
 
 \section{R and package versions used}
 \begin{knitrout}
