@@ -1,9 +1,13 @@
-.Rdata
-.Rhistory
+*.Rdata
+*.Rhistory
 *.history
-.log
-.synctex.gz
-.aux
+*.log
+*.synctex.gz
+*.aux
+*-blx.bib
+*-concordance.tex
+*.run.xml
+*.out
 
 NewAnalysis/cache
 NewAnalysis/figure

@@ -124,11 +124,11 @@ colnames(female_absolute) <- gsub("_F", "", colnames(female_absolute))
 First, we report the raw correlations between life expectancy at age 30 and each of the predictors.
 This does not control for correlations between predictors.
 It is the crudest measure.
-Table TODO shows these correlations.
+Table~\ref{tab:raw_corr} shows these correlations.
 For alcohol, smoking, and per capita GDP, the sign of the correlations are consistent across all four cuts of the data and are consistent with our expectations.
 Sodium is negatively associated with life expectancy for males but positively associated for females.
 
-<<raw_corr, echo=FALSE, results="asis", cache=TRUE, caption = "Raw correlations with life expectancy at age 30.">>=
+<<raw_corr, echo=FALSE, results="asis", cache=TRUE>>=
 
 compute_correlations <- function(outcome, variables){
   correlations <- rep(NA, ncol(variables))
@@ -147,7 +147,9 @@ f2 <- compute_correlations(female_absolute$e0, female_absolute %>% select(-e0, -
 corr_tab <- cbind(m1, m2, f1, f2)
 corr_tab <- rbind(c("Male", "", "Female", ""), rep(c("Differenced", "Cross-sectional"), 2), round(corr_tab, 2))
 rownames(corr_tab)[1:2] <- c("", "  ")
-print(xtable(corr_tab, align = "r|rr|rr"),
+print(xtable(corr_tab, align = "r|rr|rr", 
+             caption = "Raw correlations with life expectancy at age 30.",
+             label = "tab:raw_corr"),
       include.rownames = TRUE,
       include.colnames = FALSE,
       hline.after = c(0, 1, 2, nrow(corr_tab)))
@@ -161,6 +163,13 @@ We use the idea of a balancing score from Rosenbaum and Rubin (1983).
 A balancing score is a function $b(X)$ of the covariates $X$ that maeks treatment assignment $T$ conditionally independent of covariates:
 $$X \independent T \mid b(X)$$
 If we stratify on a balancing score, we may permute observations within strata.
+
+For this to yield a valid test, we essentially need to model the balancing score correctly.
+This relies on the assumption that we account for all causal variables in $X$.
+We don't believe that we have included everything that may affect life expectancy at age 30.
+However, we would like to proceed with the method.
+For robustness, we try two different balancing scores: the generalized propensity score and the prognostic score.
+If results using the two balancing scores are qualitatively similar, then we have some assurance that the assumption may not be badly violated.
 
 \subsection{Generalized Propensity Score}
 Hirano and Imbens (2004) introduce the idea of a \textit{generalized propensity score} for continuous treatments.
@@ -197,10 +206,27 @@ Note, we could fit distributions other than the normal by maximum likelihood if 
 
 
 \subsection{Prognostic Score}
-\textcolor{red}{elaborate}
-We could do the same thing using the prognostic score (Hansen, 2008).
-This is essentially what we did for model-based matching, but we don't need to subtract off the prediction.
+We do the same thing using the prognostic score, the predicted outcome using no information on the treatment (Hansen, 2008).
+We use CART to predict the outcome and create strata.
 
+\subsection{Results}
+Figures~\ref{fig:do_corr_plots_m1} and ~\ref{fig:do_corr_plots_m2} show the results for males, differenced and cross-sectionally, respectively.
+In both, per capita GDP and alcohol are both significantly associated with life expectancy at age 30.
+Smoking is weakly (at the 10\% level) associated with life expectancy at age 30 in the differenced data.
+The p-values for sodium are all above 10\%.
+
+Figures~\ref{fig:do_corr_plots_f1} and ~\ref{fig:do_corr_plots_f2} show the results for females, differenced and cross-sectionally, respectively.
+The results are less conclusive here.
+When looking at the differenced data and stratifying on GPS, smoking is significantly associated with life expectancy.
+When looking at the cross-sectional data, sodium and per capita GDP are significantly associated with life expectancy.
+Recall that for females, the correlation between sodium and life expectancy is actually positive; thus this result says that sodium has a statistically significant association with \textit{increases} in life expectancy at age 30.
+
+The p-values do not, in general, show close agreement between the two stratification methods.
+Stratification on the GPS tends to give smaller p-values than the other stratification.
+I am not sure how much confidence we should place in this analysis.
+Taken at face value, however, it says that after controlling for the other variables in the dataset, we did not identify a statistically significant association between increases in sodium consumption and decreases in life expectancy.
+This does not give evidence for the ``salt is bad'' hypothesis.
+\clearpage
 <<generalized_matching_tests, echo=FALSE>>=
 compute_prognostic_score <- function(outcome, covariates){
   dataset <- cbind(outcome, covariates)
@@ -319,15 +345,16 @@ set.seed(10101)
 pvalues <- test_corr_strata(male_diff$e0, male_diff %>% select(-e0))
 plot_corr_pvalues(pvalues)
 @
-<<do_corr_plots_f1, echo=FALSE, cache=TRUE, fig.cap = "P-values for females, differenced (2010-1990).">>=
-set.seed(10102) 
-pvalues <- test_corr_strata(female_diff$e0, female_diff %>% select(-e0))
-plot_corr_pvalues(pvalues) 
-@
 <<do_corr_plots_m2, echo=FALSE, cache=TRUE, fig.cap = "P-values for males, cross-sectional.">>=
 set.seed(10103) 
 pvalues <-  test_corr_strata(male_absolute$e0, male_absolute %>% select(-e0, -country, -year))
 plot_corr_pvalues(pvalues)
+@
+\clearpage
+<<do_corr_plots_f1, echo=FALSE, cache=TRUE, fig.cap = "P-values for females, differenced (2010-1990).">>=
+set.seed(10102) 
+pvalues <- test_corr_strata(female_diff$e0, female_diff %>% select(-e0))
+plot_corr_pvalues(pvalues) 
 @
 <<do_corr_plots_f2, echo=FALSE, cache=TRUE, fig.cap = "P-values for females, cross-sectional.">>=
 set.seed(10104) 
@@ -335,7 +362,7 @@ pvalues <-  test_corr_strata(female_absolute$e0, female_absolute %>% select(-e0,
 plot_corr_pvalues(pvalues)
 @
 
-\newpage
+\clearpage
 \section{Variable importance}
 
 In his seminal paper on random forests, Leo Breiman introduced a variable importance measure based on permutations. 
@@ -347,8 +374,14 @@ Though the idea of permutation variable importance came from random forests, it 
 We can use several metrics for this: 
 we report the ``absolute importance,'' the original prediction error minus average permuted prediction error, and the ``normalized importance,'' the absolute importance divided by the original prediction error. 
 Large values indicate more importance.
-Consistently for different cuts of the data and different methods, sodium intake appears to be the least important predictor. 
-However, sodium is more important than smoking when we look at the cross-sectional datasets using OLS with interactions.
+
+\subsection{Results}
+In the differenced datasets, alcohol is the most important predictor.
+In the cross-sectional data, per capita GDP is the most important predictor.
+This makes sense: per capita GDP probably grows globally at similar rates, so it would add less information when looking at the differenced data.
+
+Sodium intake appears to be the least important predictor for different cuts of the data and different methods. 
+Exceptions include OLS with interactions in the male cross-sectional data, all models for the female differenced data, and OLS and OLS with interactions for the female cross-sectional data.
 
 
 <<variable_importance, echo=FALSE>>=
@@ -404,31 +437,25 @@ permutation_importance_table <- function(perm_imp, title){
   norm <- round(norm, 3)
   p <- ncol(abs)
   tab <- rbind(c("Absolute", rep("", p-1), "Normalized", rep("", p-1)), rep(colnames(abs, 2)), cbind(abs, norm))
-  rownames(tab)[1:2] <- c("", "Variable")
+  rownames(tab)[1:2] <- c("", "  ")
   print(xtable(tab, align = "r|llll|llll",
                caption = title),
         include.rownames = TRUE,
         include.colnames = FALSE,
-        hline.after = c(0, 1, nrow(tab)))
+        hline.after = c(0, 1, 2, nrow(tab)))
 } 
 @
 
  
 <<do_variable_importance, echo=FALSE, results = "asis", cache=TRUE>>=
-compute_variable_importance(male_diff) %>% permutation_importance_table(title = "Variable importance for males, differenced (2010-1990)")
-compute_variable_importance(female_diff) %>% permutation_importance_table(title = "Variable importance for females, differenced (2010-1990)")
+compute_variable_importance(male_diff) %>% permutation_importance_table(title = "Variable importance for males, differenced (2010-1990)") 
 compute_variable_importance(male_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for males, cross-sectional")
+compute_variable_importance(female_diff) %>% permutation_importance_table(title = "Variable importance for females, differenced (2010-1990)")
 compute_variable_importance(female_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for females, cross-sectional")
 @
 
-
-\subsection{Conditional Variable Importance}
-
-We may want to do the conditional permutation tests in this paper: \url{http://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-9-307}.
-They first use cart to partition the observations according to the other covariates, then permute within those groups instead of permuting everything.
-This is supposed to account for dependence between features.
-
 \newpage
+
 \section{Linear models}
 
 <<linear_models, echo=FALSE>>=
@@ -491,44 +518,76 @@ compute_fixed_effects <- function(dataset){
   ))
 }
 @
-First, we look at conventional linear models for the differenced data. We report usual OLS standard errors as well as Huber-White robust standard errors.
-If salt were detrimental, then we'd expect to see a negative coefficient in the linear model.
-We do observe a negative coefficient for males, when we don't include any other variables in the model.
-However, as soon as we add alcohol to the model, the association disappears because increases in alcohol consumption explain a large portion of the decrease in life expectancy.
-We consider the full model including alcohol, smoking, and per capita GDP, in columns (7) and (8).
-For males, a one unit increase in sodium consumption from 1990 to 2010 is associated with an increase in life expectancy of $0.271$ years.
-For females, it's associated with a $2.073$ year increase in life expectancy between 1990 and 2010 (significant at 10\% level).
+\subsection{Fixed Effects Model}
+First, we look at the data cross-sectionally.
+To account for unobserved confounding variables, we add a fixed effect term for each country.
+The key assumption (aside from the usual linear model/response schedule assumptions) is that these country-specific effects do not change over time; all that changes is the treatment over time.
+This amounts to estimating a different intercept for each country.
+We need to correct the standard errors when we estimate this way by using the Huber-White Sandwich estimator.
+Let the subscript $i$ denote country and $t$ denote time period.
+The model is
 
+$$Y_{it} = \alpha_i + \lambda_t + \beta_1\text{GDP}_{it} +  \beta_2\text{ETOH}_{it} +  \beta_3\text{SMOKE}_{it} + \gamma\text{Na}_{it} + \eps_{it}$$
+$\alpha_i$ is the fixed effect for country $i$.
+$\lambda_t$ is a time effect.
 
-<<do_linear_models, results="asis", echo=FALSE, cache=TRUE>>=
-compute_linear_models_differenced(male_diff) %>% stargazer(style = "qje",
-                                                           title = "Male, Differenced",
-                                                           column.labels = rep(c("OLS", "Robust"), 4),
-                                                           notes = "")
-compute_linear_models_differenced(female_diff) %>% stargazer(style = "qje",
-                                                           title = "Female, Differenced",
-                                                           column.labels = c("OLS", "Robust"),
-                                                           notes = "")
-@
-
-Next, we look at the data cross-sectionally instead of taking the difference over time.
-Again, if salt were detrimental to health, we'd expect it to have a negative coefficient in the linear model.
+We're interested in the parameter $\gamma$.
+If salt were detrimental to health, we'd expect $\gamma$ to be negative.
 We find the opposite: in all fixed effect specifications that we run, salt has a significant positive effect on life expectancy at age 30.
 In the OLS models, salt has no significant assoiation with life expectancy.
-In the full fixed effects model, for males, a one unit increase in sodium consumption is associated with an increase in life expectancy of $3.004$ years (significant at 10\% level).
-For females, it's associated with a $6.06$ year increase in life expectancy (significant at 1\% level).
+In the full fixed effects model for males (column (6) in Table~\ref{tab:mfe}), a one unit increase in sodium consumption is associated with an increase in life expectancy of $3.004$ years (significant at 10\% level).
+For females (column (6) in Table~\ref{tab:ffe}), it's associated with a $6.06$ year increase in life expectancy (significant at 1\% level).
 
 <<do_fixed_effects, results="asis", echo=FALSE, cache=TRUE>>=
 compute_fixed_effects(male_absolute) %>% stargazer(style = "qje",
-                                                   title = "Male, Absolute",
+                                                   title = "Male cross-sectional data",
+                                                   label = "tab:mfe",
                                                    column.labels = c("Fixed Effects","Fixed Effects","Fixed Effects","OLS", "Robust", "Fixed Effects"),
                                                    notes = "")
 compute_fixed_effects(female_absolute) %>% stargazer(style = "qje",
-                                                     title = "Female, Absolute",
+                                                     title = "Female cross-sectional data",
+                                                     label = "tab:ffe",
                                                      column.labels = c("Fixed Effects","Fixed Effects","Fixed Effects","OLS", "Robust", "Fixed Effects"),
                                                      notes = "")
 @
 
+\subsection{Differenced Model}
+Next, we look at conventional linear models for the differenced data. 
+We have measurements from 1990 and 2010 for each country.
+If we take the difference, we can estimate
+
+$$\Delta Y_{it} =  \Delta \lambda_t + \beta_1\Delta \text{GDP}_{i} +  \beta_2\Delta \text{ETOH}_{i} +  \beta_3\Delta \text{SMOKE}_{i} + \gamma\Delta \text{Na}_{i} + \Delta \eps_{i}$$
+This eliminates the need for fixed effects.
+However, this model assumes constant additive treatment effects.
+In particular,
+\begin{enumerate}
+\item Any country that increases its Na+ consumption by 1 unit will shift its life expectancy by $\gamma$.
+\item Trends in life expectancy would be the same in all countries in the absence of treatment (salt consumption).
+\end{enumerate}
+
+We report usual OLS standard errors as well as Huber-White robust standard errors.
+
+If salt were detrimental, then we'd expect to see a negative coefficient in the linear model.
+We do observe a negative coefficient for males, when we don't include any other variables in the model.
+However, as soon as we add alcohol to the model, the association disappears because increases in alcohol consumption explain a large portion of the decrease in life expectancy.
+We focus on the full model including alcohol, smoking, and per capita GDP.
+For males (column (8) in Table~\ref{tab:mlm}), a one unit increase in sodium consumption from 1990 to 2010 is associated with an increase in life expectancy of $0.271$ years.
+For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ year increase in life expectancy between 1990 and 2010 (significant at 10\% level).
+
+
+<<do_linear_models, results="asis", echo=FALSE, cache=TRUE>>=
+compute_linear_models_differenced(male_diff) %>% stargazer(style = "qje",
+                                                           title = "Male, differenced regressions (2010-1990)",
+                                                           label = "tab:mlm",
+                                                           column.labels = rep(c("OLS", "Robust"), 4),
+                                                           notes = "")
+compute_linear_models_differenced(female_diff) %>% stargazer(style = "qje",
+                                                           title = "Female, differenced regressions (2010-1990)",
+                                                           label = "tab:flm",
+                                                           column.labels = c("OLS", "Robust"),
+                                                           notes = "")
+@
+\clearpage
 \section{R and package versions used}
 <<sessionInfo, include=TRUE, echo=TRUE, results='markup'>>=
 sessionInfo()
