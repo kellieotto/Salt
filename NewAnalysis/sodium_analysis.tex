@@ -79,14 +79,22 @@
 
 
 \section{Introduction}
-Idea: if salt is bad for you, then we'd expect 
+If salt is bad for you, then we'd expect 
 \begin{enumerate}
-\item ceteris paribus, salt would be negatively associated with life expectancy and the association would be statistically significant.
+\item ceteris paribus, salt would be negatively associated with life expectancy.
 \item salt would be a strong predictor of life expectancy after accounting for other important factors.
 \end{enumerate}
 We assess these points in a variety of ways below.
 We find that neither point is satisified.
 Sodium consumption is not significantly negatively correlated with life expectancy, and it isn't a strong predictor of life expectancy after accounting for alcohol consumption, cigarette consumption, and per capita GDP.
+
+On the other hand, we'd expect these other three factors to be more strongly associated with life expectancy.
+Alcohol and cigarettes are known to cause negative health outcomes, both short-term and long-term.
+Per capita GDP is a proxy for other things that are strongly associated with good health, such as access to food, high standards of sanitation, and high quality health care.
+Indeed, our analyses confirm these hypotheses: alcohol and smoking are negatively associated with and are strong predictors of life expectancy, while per capita GDP is strongly positively associated with life expectancy.
+Thus, we have confidence that the methods we explore below are able to detect an effect when the effect is actually present.
+If
+
 \section{Data cleaning}
 
 Data preprocessing includes removing unwanted variables (we keep per capita GDP, alcohol consumption, and per capita cigarette consumption only) and imputing the missing values of the predictors. In particular:
@@ -136,8 +144,8 @@ We'd like to assess how significantly correlated each variable is with life expe
 We do this by conducting stratified permutation tests.
 This data is observational, not randomized, so observations are not exchangeable without some assumptions.
 We use the idea of a balancing score from Rosenbaum and Rubin (1983).
-A balancing score is a function $b(X)$ of the covariates $X$ that maeks treatment assignment $T$ conditionally independent of covariates:
-$$X \independent T \mid b(X)$$
+A balancing score is a function $b(X)$ of the covariates $X$ that makes treatment assignment $T$ conditionally independent of covariates:
+$$X \independent T \mid b(X).$$
 If we stratify on a balancing score, we may permute observations within strata.
 
 For this to yield a valid test, we essentially need to model the balancing score correctly.
@@ -158,7 +166,7 @@ This essentially means that we've accounted for all potential confounders in $X$
 Then, they define the generalized propensity score:
 
 \begin{definition}[Generalized propensity score]
-Let $r(t, x)$ be the conditional densityof the treatment given the covariates:
+Let $r(t, x)$ be the conditional density of the treatment given the covariates:
 $$r(t, x) = f_{T | X} (t|x).$$ 
 Then the generalized propensity score is $R = r(T, X)$.
 \end{definition}
@@ -167,8 +175,8 @@ The generalized propensity score has the following mechanical property:
 
 $$X \independent \ind\{T = t\} \vert r(t, X)$$
 This means that treatment assignment is unconfounded given the generalized propensity score.
-Practically speaking, within strata of units with the same $r(T, X)$, treatment assignment is exchangeable.
-This suggests a two step procedure to conduct a permutation test for the effect of treatment:
+Practically speaking, within strata of units with the same $r(T, X)$, the level of treatment for each country amounts to an arbitrary labelling.
+This suggests a procedure to conduct a permutation test for the effect of treatment:
 \begin{enumerate}
 \item Estimate the generalized propensity score using a linear probability model for treatment given covariates.
 Formally, $T \sim \normal(X\beta, \sigma^2)$.
@@ -176,7 +184,10 @@ Then, for unit $i$, the GPS estimate is
 
 $$ R_i = \frac{1}{\sqrt{2\pi\hat{\sigma}^2}}\exp\left(-\frac{(T_i - x_i'\hat{\beta})^2}{2\hat{\sigma}^2}\right)$$
 Note, we could fit distributions other than the normal by maximum likelihood if desired. 
-\item Create a regression tree to predict the GPS $R$ using the covariates $X$, so leaves of the tree form strata with similar GPSs.
+%\item Create a regression tree to predict the GPS $R$ using the covariates $X$, so leaves of the tree form strata with similar GPSs.
+\item Stratify observations on the estimated GPS. 
+We use k-means to partition the GPS into bins. 
+We choose the number of strata $k$ to have smallest average silhouette width; this will be data-dependent.
 \item Do a stratified permutation test for correlation between treatment and outcomes.
 \end{enumerate}
 
@@ -185,23 +196,41 @@ Note, we could fit distributions other than the normal by maximum likelihood if 
 We do the same thing using the prognostic score, the predicted outcome using no information on the treatment (Hansen, 2008).
 We use CART to predict the outcome and create strata.
 
-\subsection{Results}
-Figures~\ref{fig:do_corr_plots_m1} and ~\ref{fig:do_corr_plots_m2} show the results for males, differenced and cross-sectionally, respectively.
-In both, per capita GDP and alcohol are both significantly associated with life expectancy at age 30.
-Smoking is weakly (at the 10\% level) associated with life expectancy at age 30 in the differenced data.
-The p-values for sodium are all above 10\%.
+\subsection{Balance Tests}
+There are several ways we may run into trouble using this method.
+First, we must estimate the generalized propensity score and prognostic score.
+If either model is misspecified (which in this case, it likely is), then the score which we use to stratify may result in grouping the wrong countries.
+Second, we must choose how to stratify.
+We do this in a somewhat arbitrary way.
+For the generalized propensity score, we divide the countries by quintiles of the estimated scores.
+For the prognostic score, we use the leaves of the regression tree that we use to estimate the score.
+Both methods have arbitrary tuning parameters.
 
-Figures~\ref{fig:do_corr_plots_f1} and ~\ref{fig:do_corr_plots_f2} show the results for females, differenced and cross-sectionally, respectively.
-The results are less conclusive here.
-When looking at the differenced data and stratifying on GPS, smoking is significantly associated with life expectancy.
-When looking at the cross-sectional data, sodium and per capita GDP are significantly associated with life expectancy.
-Recall that for females, the correlation between sodium and life expectancy is actually positive; thus this result says that sodium has a statistically significant association with \textit{increases} in life expectancy at age 30.
+Both scores are balancing scores, so that strata formed using them should be ``balanced'' on all confounding variables.
+That is, there should be no correlation between the treatment level and any of the covariates within strata.
+To test this, we use the same stratified permutation test of correlation that we use to test the association between treatment and outcome, except here we apply it to treatment and each covariate.
+
+Tables~\ref{tab:gps_balance_m}--\ref{tab:prog_balance_f} show the results of these balance tests, for both male and female data and both balancing scores.
+For the most part, the stratification acheives balance: most of the p-values are large.
+However, when using the generalized propensity score to stratify and test for association between salt and life expectancy, the strata do not balance the covariates.
+The p-values for association between sodium consumption and alcohol and smoking are near or exactly zero for both males and females, and the p-value for per capita GDP is zero for males.
+Thus, the permutation tests based on this stratification method may not be valid and their results should be taken with a grain of salt (pun intended).
+
+\subsection{Results}
+Figure~\ref{fig:do_corr_plots_m1} shows the results for males using the differenced data (2010-1990).
+Based on the tests using the generalized propensity score stratification, sodium, per capita GDP, and alcohol are all significantly associated with life expectancy at age 30.
+The p-values for association are all above 10\% when considering the tests using prognostic score stratification.
+
+Figure~\ref{fig:do_corr_plots_f1} shows the results for females using the differenced data (2010-1990).
+No variable is significantly associated with life expectancy using either stratification method.
+Sodium consumption has the smallest p-value, just above 10\% for both methods.
+Recall that for females, the correlation between sodium and life expectancy is actually positive; thus this result says that sodium has a nonsignificant association with \textit{increases} in life expectancy at age 30.
 
 The p-values do not, in general, show close agreement between the two stratification methods.
-Stratification on the GPS tends to give smaller p-values than the other stratification.
-I am not sure how much confidence we should place in this analysis.
-Taken at face value, however, it says that after controlling for the other variables in the dataset, we did not identify a statistically significant association between increases in sodium consumption and decreases in life expectancy.
+Stratification on the generalized propensity score tends to give smaller p-values than stratification on prognostic scores.
+Aside from this, the results suggest that after controlling for the other variables in the dataset, we did not identify a statistically significant association between increases in sodium consumption and decreases in life expectancy.
 This does not give evidence for the ``salt is bad'' hypothesis.
+
 \clearpage
 
 
@@ -212,14 +241,44 @@ This does not give evidence for the ``salt is bad'' hypothesis.
 
 
 \end{knitrout}
-\begin{knitrout}
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
-\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots_m2-1} \caption[P-values for males, cross-sectional]{P-values for males, cross-sectional.}\label{fig:do_corr_plots_m2}
-\end{figure}
+% latex table generated in R 3.2.0 by xtable 1.8-0 package
+% Mon May 23 16:24:12 2016
+\begin{table}[ht]
+\centering
+\begin{tabular}{r|rrrr}
+  \hline
+ & etoh & smoking & pc\_gdp & Na \\ 
+  \hline
+etoh &  & 0.85 & 0.41 & 0.24 \\ 
+  smoking & 0.76 &  & 0.24 & 0.49 \\ 
+  pc\_gdp & 0.10 & 0.90 &  & 0.78 \\ 
+  Na & 0.00 & 0.02 & 0.00 &  \\ 
+   \hline
+\end{tabular}
+\caption{P-values from balance tests within strata formed by GPS, for male data.
+                    Rows are the notional treatment and columns are covariates.} 
+\label{tab:gps_balance_m}
+\end{table}
+% latex table generated in R 3.2.0 by xtable 1.8-0 package
+% Mon May 23 16:24:12 2016
+\begin{table}[ht]
+\centering
+\begin{tabular}{r|rrrr}
+  \hline
+ & etoh & smoking & pc\_gdp & Na \\ 
+  \hline
+etoh &  & 0.61 & 0.42 & 0.22 \\ 
+  smoking & 0.59 &  & 0.78 & 0.71 \\ 
+  pc\_gdp & 0.39 & 0.81 &  & 0.74 \\ 
+  Na & 0.19 & 0.72 & 0.76 &  \\ 
+   \hline
+\end{tabular}
+\caption{P-values from balance tests within strata formed by prognostic score, for male data.
+                    Rows are the notional treatment and columns are covariates.} 
+\label{tab:gps_balance_m}
+\end{table}
 
 
-\end{knitrout}
-\clearpage
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
 \includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots_f1-1} \caption[P-values for females, differenced (2010-1990)]{P-values for females, differenced (2010-1990).}\label{fig:do_corr_plots_f1}
@@ -227,13 +286,44 @@ This does not give evidence for the ``salt is bad'' hypothesis.
 
 
 \end{knitrout}
-\begin{knitrout}
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
-\includegraphics[width=\maxwidth]{RmdFigs/do_corr_plots_f2-1} \caption[P-values for females, cross-sectional]{P-values for females, cross-sectional.}\label{fig:do_corr_plots_f2}
-\end{figure}
+% latex table generated in R 3.2.0 by xtable 1.8-0 package
+% Mon May 23 16:24:12 2016
+\begin{table}[ht]
+\centering
+\begin{tabular}{r|rrrr}
+  \hline
+ & etoh & smoking & pc\_gdp & Na \\ 
+  \hline
+etoh &  & 0.59 & 0.23 & 0.85 \\ 
+  smoking & 0.84 &  & 0.20 & 0.07 \\ 
+  pc\_gdp & 0.61 & 0.91 &  & 0.89 \\ 
+  Na & 0.00 & 0.00 & 0.18 &  \\ 
+   \hline
+\end{tabular}
+\caption{P-values from balance tests within strata formed by GPS, for female data.
+                    Rows are the notional treatment and columns are covariates.} 
+\label{tab:gps_balance_f}
+\end{table}
+% latex table generated in R 3.2.0 by xtable 1.8-0 package
+% Mon May 23 16:24:12 2016
+\begin{table}[ht]
+\centering
+\begin{tabular}{r|rrrr}
+  \hline
+ & etoh & smoking & pc\_gdp & Na \\ 
+  \hline
+etoh &  & 0.33 & 0.86 & 0.45 \\ 
+  smoking & 0.30 &  & 0.53 & 0.04 \\ 
+  pc\_gdp & 0.86 & 0.56 &  & 0.84 \\ 
+  Na & 0.46 & 0.05 & 0.84 &  \\ 
+   \hline
+\end{tabular}
+\caption{P-values from balance tests within strata formed by prognostic score, for female data.
+                    Rows are the notional treatment and columns are covariates.} 
+\label{tab:gps_balance_f}
+\end{table}
 
 
-\end{knitrout}
 
 \clearpage
 \section{Variable importance}
@@ -351,7 +441,7 @@ $\lambda_t$ is a time effect.
 We're interested in the parameter $\gamma$.
 If salt were detrimental to health, we'd expect $\gamma$ to be negative.
 We find the opposite: in all fixed effect specifications that we run, salt has a significant positive effect on life expectancy at age 30.
-In the OLS models, salt has no significant assoiation with life expectancy.
+In the OLS models, salt has no significant association with life expectancy.
 In the full fixed effects model for males (column (6) in Table~\ref{tab:mfe}), a one unit increase in sodium consumption is associated with an increase in life expectancy of $3.004$ years (significant at 10\% level).
 For females (column (6) in Table~\ref{tab:ffe}), it's associated with a $6.06$ year increase in life expectancy (significant at 1\% level).
 
@@ -527,6 +617,9 @@ For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ 
 \end{table} 
 
 \clearpage
+
+\textcolor{red}{Do CART and RF, see how often it gets pruned}
+
 \section{R and package versions used}
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -546,12 +639,12 @@ For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ 
 ## [8] base     
 ## 
 ## other attached packages:
-##  [1] rpart_4.1-10        stargazer_5.2       plm_1.5-12         
-##  [4] lmtest_0.9-34       zoo_1.7-12          sandwich_2.3-4     
-##  [7] randomForest_4.6-12 Hmisc_3.17-0        Formula_1.2-1      
-## [10] survival_2.38-3     lattice_0.20-33     ggplot2_1.0.1      
-## [13] reshape2_1.4.1      dplyr_0.4.3         xtable_1.8-0       
-## [16] knitr_1.11         
+##  [1] cluster_2.0.3       rpart_4.1-10        stargazer_5.2      
+##  [4] plm_1.5-12          lmtest_0.9-34       zoo_1.7-12         
+##  [7] sandwich_2.3-4      randomForest_4.6-12 Hmisc_3.17-0       
+## [10] Formula_1.2-1       survival_2.38-3     lattice_0.20-33    
+## [13] ggplot2_1.0.1       reshape2_1.4.1      dplyr_0.4.3        
+## [16] xtable_1.8-0        knitr_1.11         
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] splines_3.2.0       colorspace_1.2-6    mgcv_1.8-9         
@@ -564,10 +657,10 @@ For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ 
 ## [22] Rcpp_0.12.2         acepack_1.3-3.3     scales_0.3.0       
 ## [25] formatR_1.2.1       lme4_1.1-10         gridExtra_2.0.0    
 ## [28] digest_0.6.8        stringi_1.0-1       tools_3.2.0        
-## [31] magrittr_1.5        lazyeval_0.1.10     cluster_2.0.3      
-## [34] car_2.1-0           MASS_7.3-45         Matrix_1.2-2       
-## [37] assertthat_0.1      minqa_1.2.4         R6_2.1.1           
-## [40] nnet_7.3-11         nlme_3.1-122
+## [31] magrittr_1.5        lazyeval_0.1.10     car_2.1-0          
+## [34] MASS_7.3-45         Matrix_1.2-2        assertthat_0.1     
+## [37] minqa_1.2.4         R6_2.1.1            nnet_7.3-11        
+## [40] nlme_3.1-122
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
