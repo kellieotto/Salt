@@ -447,7 +447,7 @@ We perturb the variables by permuting them, breaking the association between the
 
 Though the idea of permutation variable importance came from random forests, it is sufficiently general that it can apply to any predictive model. 
 We can use several metrics for this: 
-we report the ``absolute importance,'' the original prediction error minus average permuted prediction error, and the ``normalized importance,'' the absolute importance divided by the original prediction error. 
+we report the ``absolute importance,'' the original root mean squared error (RMSE) minus average permuted RMSE, and the ``normalized importance,'' the absolute importance divided by the original RMSE. 
 Large values indicate more importance.
 
 \subsection{Results}
@@ -529,6 +529,92 @@ compute_variable_importance(male_diff) %>% permutation_importance_table(title = 
 #compute_variable_importance(male_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for males, cross-sectional") 
 compute_variable_importance(female_diff) %>% permutation_importance_table(title = "Variable importance for females, differenced (2010-1990)")
 #compute_variable_importance(female_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for females, cross-sectional")
+@
+
+\subsection{Alternative Variable Importance for Random Forests}
+The default variable importance measure in \texttt{randomForest} is different from what we described above.
+Instead of permuting the predictor of interest and evaluating the full model on this perturbed dataset, the function does the permutation procedure for each individual tree used in growing the random forest.
+The final importance measure is the average decrease in mean squared error across trees in the forest.
+
+Figure~\ref{fig:rf_variable_importance} shows these measures when we train a random forest with the default R settings.
+Note that we report root mean squared error in the previous section, so the scales are different.
+Although the order of importance varies slightly, the trend is the same for both the male and female datasets: alcohol and per capita GDP are substantially more important than smoking and sodium.
+
+Figure~\ref{fig:rf_partial_plots} shows the partial dependency plots for each variable.
+We use the random forest to estimate the marginal effect of each variable on changes in life expectancy at age 30 from 1990 to 2010, holding the other variables fixed at their observed values.
+These figures suggest that each variable has a large effect (steep positive or negative slope, graphically) only locally.
+For instance, increases of \$0 to \$10,000 in per capita GDP seem to have a large positive association with increased life expectancy, but increases in per capita GDP larger than \$10,000 have little to no effect.
+Similarly, decreases in cigarettes per capita seem to have no association with life expectancy, while increases in cigarettes per capita have a negative association with life expectancy.
+The findings for sodium are less clear.
+It appears that for males, only increases in sodium consumption over 0.2 grams per day are associated with decreases in life expectancy.
+For females, any increase in sodium consumption is associated with increased life expectancy.
+Compared to the other variables, the magnitude of changes in life expectancy according to sodium consumption are smaller; the curves for alcohol and per capita GDP fill the entire plot frame, while the curves for sodium span half of that range.
+
+We've considered variable importance in several manners, and all confirm that sodium is a less important predictor than alcohol and per capita GDP.
+Because the dataset is small and parts of the covariate space may be sparse, we should be careful not to place too much weight in these results.
+Furthermore, this measure of variable importance is specific to the random forest models that we estimated.
+One must bear in mind that importance may depend on the choice of model.
+
+<<rf_variable_importance, fig.align = "center", fig.height = 6, fig.width = 12, cache=TRUE, fig.cap = "Variable importance measure from the \texttt{randomForest} package.">>=
+male_rf <- randomForest(e0~., male_diff, importance = TRUE)
+female_rf <- randomForest(e0~., female_diff, importance = TRUE)
+importanceOrder=order(male_rf$importance)
+importance_mat <- list(data.frame(importance(male_rf), "Sex"=rep("Male", 4)), 
+                       data.frame(importance(female_rf), "Sex"=rep("Female", 4))) %>% 
+                  do.call(rbind, .) %>% 
+                  mutate("Covariate" = rownames(.)) %>%
+                  melt(id.vars = c("Sex", "Covariate"))
+importance_mat[, "Covariate"] <- gsub("1", "", importance_mat[, "Covariate"])
+
+importance_mat %>% filter(variable == "IncNodePurity") %>%
+  mutate("Covariate" = factor(Covariate, levels = rownames(male_rf$importance)[importanceOrder])) %>%
+  ggplot(aes(x = value, y = factor(Covariate))) +
+  geom_point(size = 3) +
+  facet_grid(~Sex, scales = "free") +  
+  theme_bw() +
+  theme(title = element_text(size = 18),
+        axis.title = element_text(size=18),
+        axis.text = element_text(size=15),
+        strip.text.x = element_text(size=18)) +
+  xlab("Increase in Node Purity") +
+  ylab("Exposure") +
+  ggtitle("Random Forest Importance")
+#par(mfrow=c(1,2))
+#varImpPlot(male_rf,type=2)
+#varImpPlot(female_rf,type=2)
+@
+<<rf_partial_plots, fig.align = "center", fig.height = 12, fig.width = 12, cache=TRUE, fig.cap = "Partial dependency plots for each of the four variables. They display the estimated marginal effect of the variable on change in life expectancy at age 30 from 1990 to 2010.">>=
+importanceOrder2=order(-male_rf$importance[,1])
+names=rownames(male_rf$importance)[importanceOrder2]
+plot_data <- vector("list", 4)
+for(i in 1:4){
+  name <- names[i]
+  m1 <- partialPlot(male_rf, male_diff, eval(name), plot = FALSE)
+  f1 <- partialPlot(female_rf, female_diff, eval(name), plot=FALSE)
+  x <- c(m1$x, f1$x)
+  y <- c(m1$y, f1$y)
+  plot_data[[i]] <- data.frame(
+                    "x"=x, 
+                    "y"=y, 
+                    "var"=rep(name, length(x)),
+                    "Sex"=c(rep("Male", length(m1$x)), rep("Female", length(f1$x))))
+}
+plot_data <- do.call(rbind, plot_data)
+ggplot(plot_data, aes(x = x, y = y)) + 
+  geom_line(aes(color = Sex)) +
+  facet_wrap(~var, scales = "free") +
+  ylim(2.1, 4.1) +
+  theme_bw() + 
+  theme(legend.position = "bottom",
+        title = element_text(size = 18),
+        axis.title = element_text(size=18),
+        axis.text = element_text(size=15),
+        legend.title = element_text(size=18,face="plain"),
+        legend.text = element_text(size=15),
+        strip.text.x = element_text(size=18)) +
+  xlab("Change in Exposure Level") +
+  ylab("") +
+  ggtitle("Partial Dependency Plots \n Difference in Life Expectancy at Age 30 (2010 - 1990)")
 @
 
 \newpage
@@ -666,7 +752,6 @@ compute_linear_models_differenced(female_diff) %>% stargazer(style = "qje",
 @
 \clearpage
 
-\textcolor{red}{Do CART and RF, see how often it gets pruned}
 
 \section{R and package versions used}
 <<sessionInfo, include=TRUE, echo=TRUE, results='markup'>>=
