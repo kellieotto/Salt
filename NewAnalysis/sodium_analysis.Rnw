@@ -451,12 +451,13 @@ we report the ``absolute importance,'' the original prediction error minus avera
 Large values indicate more importance.
 
 \subsection{Results}
-In the differenced datasets, alcohol is the most important predictor.
-In the cross-sectional data, per capita GDP is the most important predictor.
-This makes sense: per capita GDP probably grows globally at similar rates, so it would add less information when looking at the differenced data.
-
-Sodium intake appears to be the least important predictor for different cuts of the data and different methods. 
-Exceptions include OLS with interactions in the male cross-sectional data, all models for the female differenced data, and OLS and OLS with interactions for the female cross-sectional data.
+We compare several prediction methods: CART, random forests, OLS, and OLS with interaction terms.
+We run each function using default tuning parameters.
+Alcohol is the most important predictor across all models except for CART.
+CART is interesting: after pruning, the final tree for males only inludes per capita GDP and the final tree for females includes per capita GDP and sodium.
+For such a simple model, 
+Sodium intake appears to be the least important predictor for different methods for males. 
+However, it is not least important in any model for the female data; smoking appears least important here.
 
 
 <<variable_importance, echo=FALSE>>=
@@ -498,6 +499,7 @@ compute_variable_importance <- function(dataset){
   Xmat = dataset %>% dplyr::select(-e0)
   Y = dataset %>% dplyr::select(e0)
   model_list <- list(
+    "CART"                  = rpart(e0~., data = dataset),
     "Random Forest"         = randomForest(e0~., data = dataset),
     "OLS"                   = lm(e0~., data = dataset),
     "OLS with interactions" = lm(e0~(.)^2, data = dataset)
@@ -524,9 +526,9 @@ permutation_importance_table <- function(perm_imp, title){
  
 <<do_variable_importance, echo=FALSE, results = "asis", cache=TRUE>>=
 compute_variable_importance(male_diff) %>% permutation_importance_table(title = "Variable importance for males, differenced (2010-1990)") 
-compute_variable_importance(male_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for males, cross-sectional")
+#compute_variable_importance(male_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for males, cross-sectional") 
 compute_variable_importance(female_diff) %>% permutation_importance_table(title = "Variable importance for females, differenced (2010-1990)")
-compute_variable_importance(female_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for females, cross-sectional")
+#compute_variable_importance(female_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for females, cross-sectional")
 @
 
 \newpage

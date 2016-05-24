@@ -242,7 +242,7 @@ This does not give evidence for the ``salt is bad'' hypothesis.
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Mon May 23 16:24:12 2016
+% Mon May 23 22:16:08 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrrr}
@@ -260,7 +260,7 @@ etoh &  & 0.85 & 0.41 & 0.24 \\
 \label{tab:gps_balance_m}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Mon May 23 16:24:12 2016
+% Mon May 23 22:16:08 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrrr}
@@ -287,7 +287,7 @@ etoh &  & 0.61 & 0.42 & 0.22 \\
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Mon May 23 16:24:12 2016
+% Mon May 23 22:16:08 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrrr}
@@ -305,7 +305,7 @@ etoh &  & 0.59 & 0.23 & 0.85 \\
 \label{tab:gps_balance_f}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Mon May 23 16:24:12 2016
+% Mon May 23 22:16:08 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrrr}
@@ -339,19 +339,17 @@ we report the ``absolute importance,'' the original prediction error minus avera
 Large values indicate more importance.
 
 \subsection{Results}
-In the differenced datasets, alcohol is the most important predictor.
-In the cross-sectional data, per capita GDP is the most important predictor.
-This makes sense: per capita GDP probably grows globally at similar rates, so it would add less information when looking at the differenced data.
-
-Sodium intake appears to be the least important predictor for different cuts of the data and different methods. 
-Exceptions include OLS with interactions in the male cross-sectional data, all models for the female differenced data, and OLS and OLS with interactions for the female cross-sectional data.
+We compare several prediction methods: CART, random forests, OLS, and OLS with interaction terms.
+Alcohol is the most important predictor across all models.
+Sodium intake appears to be the least important predictor for different methods for males. 
+However, it is not least important in any model for the female differenced data; smoking appears less important here.
 
 
 
 
  
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Sat May 21 12:10:30 2016
+% Mon May 23 22:16:12 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|llll|llll}
@@ -360,15 +358,16 @@ Exceptions include OLS with interactions in the male cross-sectional data, all m
    \hline
    & etoh & smoking & pc\_gdp & Na & etoh & smoking & pc\_gdp & Na \\ 
    \hline
-Random Forest & 0.454 & 0.278 & 0.391 & 0.235 & 0.634 & 0.388 & 0.545 & 0.328 \\ 
-  OLS & 0.829 & 0.042 & 0.172 & 0.003 & 0.75 & 0.038 & 0.156 & 0.002 \\ 
-  OLS with interactions & 1.819 & 0.579 & 0.873 & 0.512 & 2.631 & 0.837 & 1.262 & 0.741 \\ 
+CART & 0 & 0 & 0.939 & 0 & 0 & 0 & 0.732 & 0 \\ 
+  Random Forest & 0.53 & 0.24 & 0.409 & 0.25 & 0.775 & 0.351 & 0.599 & 0.366 \\ 
+  OLS & 0.827 & 0.059 & 0.172 & 0.001 & 0.747 & 0.054 & 0.156 & 0.001 \\ 
+  OLS with interactions & 1.803 & 0.578 & 0.84 & 0.478 & 2.607 & 0.836 & 1.215 & 0.691 \\ 
    \hline
 \end{tabular}
 \caption{Variable importance for males, differenced (2010-1990)} 
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Sat May 21 12:10:33 2016
+% Mon May 23 22:16:15 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|llll|llll}
@@ -377,46 +376,13 @@ Random Forest & 0.454 & 0.278 & 0.391 & 0.235 & 0.634 & 0.388 & 0.545 & 0.328 \\
    \hline
    & etoh & smoking & pc\_gdp & Na & etoh & smoking & pc\_gdp & Na \\ 
    \hline
-Random Forest & 0.847 & 0.589 & 2.508 & 0.566 & 0.713 & 0.496 & 2.11 & 0.476 \\ 
-  OLS & 0.46 & 0.021 & 2.292 & 0.013 & 0.187 & 0.008 & 0.931 & 0.005 \\ 
-  OLS with interactions & 1 & 0.181 & 2.395 & 0.64 & 0.457 & 0.083 & 1.093 & 0.292 \\ 
-   \hline
-\end{tabular}
-\caption{Variable importance for males, cross-sectional} 
-\end{table}
-% latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Sat May 21 12:10:35 2016
-\begin{table}[ht]
-\centering
-\begin{tabular}{r|llll|llll}
-   \hline
- & Absolute &  &  &  & Normalized &  &  &  \\ 
-   \hline
-   & etoh & smoking & pc\_gdp & Na & etoh & smoking & pc\_gdp & Na \\ 
-   \hline
-Random Forest & 0.314 & 0.168 & 0.262 & 0.199 & 0.669 & 0.357 & 0.557 & 0.423 \\ 
-  OLS & 0.392 & 0 & 0.062 & 0.118 & 0.461 & 0 & 0.073 & 0.139 \\ 
-  OLS with interactions & 0.745 & 0.15 & 0.455 & 0.305 & 1.243 & 0.25 & 0.759 & 0.509 \\ 
+CART & 0 & 0 & 0.439 & 0.123 & 0 & 0 & 0.516 & 0.145 \\ 
+  Random Forest & 0.327 & 0.165 & 0.282 & 0.206 & 0.728 & 0.367 & 0.627 & 0.459 \\ 
+  OLS & 0.403 & 0 & 0.056 & 0.118 & 0.473 & 0 & 0.065 & 0.138 \\ 
+  OLS with interactions & 0.761 & 0.155 & 0.466 & 0.309 & 1.27 & 0.259 & 0.778 & 0.516 \\ 
    \hline
 \end{tabular}
 \caption{Variable importance for females, differenced (2010-1990)} 
-\end{table}
-% latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Sat May 21 12:10:38 2016
-\begin{table}[ht]
-\centering
-\begin{tabular}{r|llll|llll}
-   \hline
- & Absolute &  &  &  & Normalized &  &  &  \\ 
-   \hline
-   & etoh & smoking & pc\_gdp & Na & etoh & smoking & pc\_gdp & Na \\ 
-   \hline
-Random Forest & 0.452 & 0.446 & 1.663 & 0.417 & 0.553 & 0.546 & 2.038 & 0.511 \\ 
-  OLS & 0.036 & 0.003 & 1.457 & 0.049 & 0.02 & 0.002 & 0.798 & 0.027 \\ 
-  OLS with interactions & 0.628 & 0.125 & 1.749 & 0.258 & 0.4 & 0.08 & 1.114 & 0.164 \\ 
-   \hline
-\end{tabular}
-\caption{Variable importance for females, cross-sectional} 
 \end{table}
 
 
@@ -651,16 +617,16 @@ For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ 
 ##  [4] nloptr_1.0.4        foreign_0.8-66      DBI_0.3.1          
 ##  [7] RColorBrewer_1.1-2  plyr_1.8.3          stringr_1.0.0      
 ## [10] MatrixModels_0.4-1  munsell_0.4.2       gtable_0.1.2       
-## [13] bdsmatrix_1.3-2     evaluate_0.8        latticeExtra_0.6-26
-## [16] SparseM_1.7         quantreg_5.19       pbkrtest_0.4-2     
-## [19] parallel_3.2.0      highr_0.5.1         proto_0.3-10       
-## [22] Rcpp_0.12.2         acepack_1.3-3.3     scales_0.3.0       
-## [25] formatR_1.2.1       lme4_1.1-10         gridExtra_2.0.0    
-## [28] digest_0.6.8        stringi_1.0-1       tools_3.2.0        
-## [31] magrittr_1.5        lazyeval_0.1.10     car_2.1-0          
-## [34] MASS_7.3-45         Matrix_1.2-2        assertthat_0.1     
-## [37] minqa_1.2.4         R6_2.1.1            nnet_7.3-11        
-## [40] nlme_3.1-122
+## [13] bdsmatrix_1.3-2     codetools_0.2-14    evaluate_0.8       
+## [16] latticeExtra_0.6-26 SparseM_1.7         quantreg_5.19      
+## [19] pbkrtest_0.4-2      parallel_3.2.0      highr_0.5.1        
+## [22] proto_0.3-10        Rcpp_0.12.2         acepack_1.3-3.3    
+## [25] scales_0.3.0        formatR_1.2.1       lme4_1.1-10        
+## [28] gridExtra_2.0.0     digest_0.6.8        stringi_1.0-1      
+## [31] tools_3.2.0         magrittr_1.5        lazyeval_0.1.10    
+## [34] car_2.1-0           MASS_7.3-45         Matrix_1.2-2       
+## [37] assertthat_0.1      minqa_1.2.4         R6_2.1.1           
+## [40] nnet_7.3-11         nlme_3.1-122
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
