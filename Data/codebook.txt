@@ -23,21 +23,16 @@ e0_F: same as e0_M but for females
 
 year: 1990 or 2010
 
-pwt_year: 1990 or 1992 or 2008-2010.  Explanation as follows.  The
+pwt_year: 1990 or 1992 or 2010.  Explanation as follows.  The
 	  year variable refers to the year of the Na+ data, which is
 	  always exactly 1990 or 2010.  The mortality data is a
 	  nearest-match year.  One country does not have mortality
 	  data going back to 1990, so we use 1992 as a drop-in
-	  replacement.  Thirteen countries do not have mortality data
-	  going up to 2010, so we use 2008 (1) or 2009 (12) as a
-	  drop-in replacement.  One country has mortality data going
+	  replacement.   One country has mortality data going
 	  up to 2005, only, and this country has been excluded from
 	  the later period.  The economics data are always matched,
-	  year-wise, to the mortality data.  So, for example, if in a
-	  country, we have Na+ data from 2010, but we are using
-	  mortality from 2009 because 2010 mortality data are not 
-          released yet, then we also use 2009 economic data, to match
-	  the mortality data.
+	  year-wise, to the mortality data (so we use 1992 economic
+          data if we are using 1992 mortality data).
 
 Na_M: Age-standardised estimated sodium intakes (g/day) from 1990 and
       2010, males aged 20 and over.  From Powles (2013).
@@ -52,6 +47,8 @@ etohM: 2010 only.   Alcohol consumption per capita per year.  Litres
 
 etohF: Same as etohM, but for females.
 
+popF, popM: male and female total pop, for imputing the 1990 EtOH data
+
 {all social + economic variables below are from the PWT}
 
 pc_gdp: rgdpe/pop [q.v.]
@@ -59,9 +56,6 @@ pc_gdp: rgdpe/pop [q.v.]
 pop: population (in millions)
 
 rgdpe: Expenditure-side real GDP at chained PPPs (in mil. 2005US$)
-
-non_2010_data: dummy variable. =1 if year=2010 but pwt_year =/= 2010. 
-               ignore if year=1990.
 
 country_name_p: Full country name string (some with embedded spaces)
 
@@ -87,10 +81,6 @@ rkna: Capital stock at constant 2005 national prices (in mil. 2005US$)
 tfpna: TFP at constant national prices (2005=1)
 
 labsh: Share of labour compensation in GDP at current national prices
-
-popF: Population of females >=15yo. Note the figure matches the year of the mortality data
-
-popM: Same as popM, but for males.
 
 sqrt_pc_gdp: sqrt(pc_gdp)
 
