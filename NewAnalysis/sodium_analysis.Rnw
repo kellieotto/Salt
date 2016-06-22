@@ -60,14 +60,13 @@ Sodium consumption is not significantly negatively correlated with life expectan
 
 On the other hand, we'd expect these other three factors to be more strongly associated with life expectancy.
 Alcohol and cigarettes are known to cause negative health outcomes, both short-term and long-term.
-Per capita GDP is a proxy for other things that are strongly associated with good health, such as access to food, high standards of sanitation, and high quality health care.
-Indeed, our analyses confirm these hypotheses: alcohol and smoking are negatively associated with and are strong predictors of life expectancy, while per capita GDP is strongly positively associated with life expectancy.
+Indeed, our analyses confirm these hypotheses: alcohol and smoking are negatively associated with and are strong predictors of life expectancy.
 Thus, we have confidence that the methods we explore below are able to detect an effect when the effect is actually present.
-If
+
 
 \section{Data cleaning}
 
-Data preprocessing includes removing unwanted variables (we keep per capita GDP, alcohol consumption, and per capita cigarette consumption only) and imputing the missing values of the predictors. In particular:
+Data preprocessing includes removing unwanted variables (we keep alcohol consumption and per capita cigarette consumption only) and imputing the missing values of the predictors. In particular:
 
 \begin{itemize}
 \item We merge two data sources. One contains the economic variables, life expectancy, alcohol, and sodium consumption. The other contains the annual number of cigarettes smoked per capita.
@@ -114,18 +113,19 @@ salt_diff <- salt2010[,-1]-salt1990[,-1]
 salt_diff <- cbind(countries, salt_diff)
 salt_diff <- filter(salt_diff, !is.na(e0_M))
 
-male_diff <- dplyr::select(salt_diff, e0_M, etoh_M, smoking, pc_gdp, Na_M)
+male_diff <- dplyr::select(salt_diff, e0_M, etoh_M, smoking, Na_M)
 colnames(male_diff) <- gsub("_M", "", colnames(male_diff))
-female_diff <- dplyr::select(salt_diff,  e0_F, etoh_F, smoking, pc_gdp, Na_F)
+female_diff <- dplyr::select(salt_diff,  e0_F, etoh_F, smoking, Na_F)
 colnames(female_diff) <- gsub("_F", "", colnames(female_diff))
 @
+
 <<malefemale_absolute>>=
 salt_absolute <- rbind(salt1990, salt2010)
 salt_absolute$year <- c(rep("1990", nrow(salt1990)), rep("2010", nrow(salt2010)))
 salt_absolute <- salt_absolute %>% filter(!is.na(e0_M) & !is.na(e0_F))
-male_absolute <- dplyr::select(salt_absolute, e0_M, country, year, etoh_M, smoking, pc_gdp, Na_M)
+male_absolute <- dplyr::select(salt_absolute, e0_M, country, year, etoh_M, smoking, Na_M)
 colnames(male_absolute) <- gsub("_M", "", colnames(male_absolute))
-female_absolute <- dplyr::select(salt_absolute, e0_F, country, year, etoh_F, smoking, pc_gdp, Na_F)
+female_absolute <- dplyr::select(salt_absolute, e0_F, country, year, etoh_F, smoking, Na_F)
 colnames(female_absolute) <- gsub("_F", "", colnames(female_absolute))
 @
 \section{Correlations}
@@ -209,7 +209,6 @@ Then, for unit $i$, the GPS estimate is
 
 $$ R_i = \frac{1}{\sqrt{2\pi\hat{\sigma}^2}}\exp\left(-\frac{(T_i - x_i'\hat{\beta})^2}{2\hat{\sigma}^2}\right)$$
 Note, we could fit distributions other than the normal by maximum likelihood if desired. 
-%\item Create a regression tree to predict the GPS $R$ using the covariates $X$, so leaves of the tree form strata with similar GPSs.
 \item Stratify observations on the estimated GPS. 
 We use k-means to partition the GPS into bins. 
 We choose the number of strata $k$ to have smallest average silhouette width; this will be data-dependent.
@@ -243,13 +242,14 @@ Thus, the permutation tests based on this stratification method may not be valid
 
 \subsection{Results}
 Figure~\ref{fig:do_corr_plots_m1} shows the results for males using the differenced data (2010-1990).
-Based on the tests using the generalized propensity score stratification, sodium, per capita GDP, and alcohol are all significantly associated with life expectancy at age 30.
+Based on the tests using the generalized propensity score stratification, sodium, and alcohol are all significantly associated with life expectancy at age 30.
 The p-values for association are all above 10\% when considering the tests using prognostic score stratification.
 
 Figure~\ref{fig:do_corr_plots_f1} shows the results for females using the differenced data (2010-1990).
 No variable is significantly associated with life expectancy using either stratification method.
-Sodium consumption has the smallest p-value, just above 10\% for both methods.
+\textcolor{red}{Sodium consumption has the smallest p-value, just above 10\% for both methods.
 Recall that for females, the correlation between sodium and life expectancy is actually positive; thus this result says that sodium has a nonsignificant association with \textit{increases} in life expectancy at age 30.
+}
 
 The p-values do not, in general, show close agreement between the two stratification methods.
 Stratification on the generalized propensity score tends to give smaller p-values than stratification on prognostic scores.
@@ -369,7 +369,7 @@ test_corr_strata <- function(outcome, dataset, iters = 1000){
     }
   }
   return(list(
-    "pvalues" = pvalues[4:1,],
+    "pvalues" = pvalues[nrow(pvalues):1,],
     "gps_balance" = gps_balance_test,
     "prog_balance" = prog_balance_test)
   )
@@ -388,7 +388,7 @@ plot_corr_pvalues <- function(pvalues){
     xlab("P-value") + ylab("") +
     ggtitle("P-value for Correlation with Life Expectancy at Age 30") +
     theme_bw() + 
-    scale_x_continuous(breaks = c(0, 0.05, 0.1, 0.25, 0.5, 0.75), limits = c(0, 0.75)) +
+    scale_x_continuous(breaks = c(0, 0.05, 0.1, 0.25, 0.5, 0.75), limits = c(0, 0.9)) +
     theme(axis.text = element_text(size = 16)) +
     theme(axis.title = element_text(size = 16)) +
     theme(legend.text = element_text(size = 16)) + 
@@ -398,7 +398,7 @@ plot_corr_pvalues <- function(pvalues){
 }
 
 print_balance_tables <- function(balance_matrix, label, caption){
-  xtable(balance_matrix, align = "r|rrrr",
+  xtable(balance_matrix, align = "r|rrr",
          label = label,
          caption = caption)
 }
@@ -408,6 +408,7 @@ print_balance_tables <- function(balance_matrix, label, caption){
 set.seed(10101)
 pvalues_m <- test_corr_strata(male_diff$e0, male_diff %>% select(-e0)) 
 plot_corr_pvalues(pvalues_m$pvalues)  
+
 @
 <<do_balance_tables_m, results="asis">>=
 print_balance_tables(pvalues_m$gps_balance, label = "tab:gps_balance_m", caption = "P-values from balance tests within strata formed by GPS, for male data.
@@ -416,6 +417,7 @@ print_balance_tables(pvalues_m$prog_balance, label = "tab:gps_balance_m", captio
                     Rows are the notional treatment and columns are covariates.")
 @
 <<do_corr_plots_m2, echo=FALSE, cache=TRUE, fig.cap = "P-values for males, cross-sectional.", eval=FALSE>>=
+
 set.seed(10103) 
 pvalues <-  test_corr_strata(male_absolute$e0, male_absolute %>% select(-e0, -country, -year))
 plot_corr_pvalues(pvalues)
@@ -454,11 +456,11 @@ Large values indicate more importance.
 We compare several prediction methods: CART, random forests, OLS, and OLS with interaction terms.
 We run each function using default tuning parameters.
 Alcohol is the most important predictor across all models except for CART.
-CART is interesting: after pruning, the final tree for males only inludes per capita GDP and the final tree for females includes per capita GDP and sodium.
+\textcolor{red}{CART is interesting: after pruning, the final tree for males only inludes per capita GDP and the final tree for females includes per capita GDP and sodium.
 For such a simple model, 
 Sodium intake appears to be the least important predictor for different methods for males. 
 However, it is not least important in any model for the female data; smoking appears least important here.
-
+}
 
 <<variable_importance, echo=FALSE>>=
 compute_rmse <- function(prediction, truth){
@@ -515,7 +517,7 @@ permutation_importance_table <- function(perm_imp, title){
   p <- ncol(abs)
   tab <- rbind(c("Absolute", rep("", p-1), "Normalized", rep("", p-1)), rep(colnames(abs, 2)), cbind(abs, norm))
   rownames(tab)[1:2] <- c("", "  ")
-  print(xtable(tab, align = "r|llll|llll",
+  print(xtable(tab, align = "r|lll|lll",
                caption = title),
         include.rownames = TRUE,
         include.colnames = FALSE,
@@ -526,9 +528,7 @@ permutation_importance_table <- function(perm_imp, title){
  
 <<do_variable_importance, echo=FALSE, results = "asis", cache=TRUE>>=
 compute_variable_importance(male_diff) %>% permutation_importance_table(title = "Variable importance for males, differenced (2010-1990)") 
-#compute_variable_importance(male_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for males, cross-sectional") 
 compute_variable_importance(female_diff) %>% permutation_importance_table(title = "Variable importance for females, differenced (2010-1990)")
-#compute_variable_importance(female_absolute %>% select(-year, -country)) %>% permutation_importance_table(title = "Variable importance for females, cross-sectional")
 @
 
 \subsection{Alternative Variable Importance for Random Forests}
@@ -538,29 +538,31 @@ The final importance measure is the average decrease in mean squared error acros
 
 Figure~\ref{fig:rf_variable_importance} shows these measures when we train a random forest with the default R settings.
 Note that we report root mean squared error in the previous section, so the scales are different.
-Although the order of importance varies slightly, the trend is the same for both the male and female datasets: alcohol and per capita GDP are substantially more important than smoking and sodium.
+\textcolor{red}{Although the order of importance varies slightly, the trend is the same for both the male and female datasets: alcohol and per capita GDP are substantially more important than smoking and sodium.}
 
 Figure~\ref{fig:rf_partial_plots} shows the partial dependency plots for each variable.
 We use the random forest to estimate the marginal effect of each variable on changes in life expectancy at age 30 from 1990 to 2010, holding the other variables fixed at their observed values.
 These figures suggest that each variable has a large effect (steep positive or negative slope, graphically) only locally.
-For instance, increases of \$0 to \$10,000 in per capita GDP seem to have a large positive association with increased life expectancy, but increases in per capita GDP larger than \$10,000 have little to no effect.
+\textcolor{red}{For instance, increases of \$0 to \$10,000 in per capita GDP seem to have a large positive association with increased life expectancy, but increases in per capita GDP larger than \$10,000 have little to no effect.
 Similarly, decreases in cigarettes per capita seem to have no association with life expectancy, while increases in cigarettes per capita have a negative association with life expectancy.
 The findings for sodium are less clear.
 It appears that for males, only increases in sodium consumption over 0.2 grams per day are associated with decreases in life expectancy.
 For females, any increase in sodium consumption is associated with increased life expectancy.
 Compared to the other variables, the magnitude of changes in life expectancy according to sodium consumption are smaller; the curves for alcohol and per capita GDP fill the entire plot frame, while the curves for sodium span half of that range.
+}
 
-We've considered variable importance in several manners, and all confirm that sodium is a less important predictor than alcohol and per capita GDP.
+We've considered variable importance in several manners, and all confirm that sodium is a less important predictor than alcohol \textcolor{red}{and per capita GDP.}
 Because the dataset is small and parts of the covariate space may be sparse, we should be careful not to place too much weight in these results.
 Furthermore, this measure of variable importance is specific to the random forest models that we estimated.
 One must bear in mind that importance may depend on the choice of model.
 
 <<rf_variable_importance, fig.align = "center", fig.height = 6, fig.width = 12, cache=TRUE, fig.cap = "Variable importance measure from the \texttt{randomForest} package.">>=
+
 male_rf <- randomForest(e0~., male_diff, importance = TRUE)
 female_rf <- randomForest(e0~., female_diff, importance = TRUE)
 importanceOrder=order(male_rf$importance)
-importance_mat <- list(data.frame(importance(male_rf), "Sex"=rep("Male", 4)), 
-                       data.frame(importance(female_rf), "Sex"=rep("Female", 4))) %>% 
+importance_mat <- list(data.frame(importance(male_rf), "Sex"=rep("Male", 3)), 
+                       data.frame(importance(female_rf), "Sex"=rep("Female", 3))) %>% 
                   do.call(rbind, .) %>% 
                   mutate("Covariate" = rownames(.)) %>%
                   melt(id.vars = c("Sex", "Covariate"))
@@ -583,11 +585,12 @@ importance_mat %>% filter(variable == "IncNodePurity") %>%
 #varImpPlot(male_rf,type=2)
 #varImpPlot(female_rf,type=2)
 @
-<<rf_partial_plots, fig.align = "center", fig.height = 12, fig.width = 12, cache=TRUE, fig.cap = "Partial dependency plots for each of the four variables. They display the estimated marginal effect of the variable on change in life expectancy at age 30 from 1990 to 2010.">>=
+<<rf_partial_plots, fig.align = "center", fig.height = 6, fig.width = 12, cache=TRUE, fig.cap = "Partial dependency plots for each of the four variables. They display the estimated marginal effect of the variable on change in life expectancy at age 30 from 1990 to 2010.">>=
+
 importanceOrder2=order(-male_rf$importance[,1])
 names=rownames(male_rf$importance)[importanceOrder2]
-plot_data <- vector("list", 4)
-for(i in 1:4){
+plot_data <- vector("list", 3)
+for(i in 1:3){
   name <- names[i]
   m1 <- partialPlot(male_rf, male_diff, eval(name), plot = FALSE)
   f1 <- partialPlot(female_rf, female_diff, eval(name), plot=FALSE)
@@ -603,7 +606,7 @@ plot_data <- do.call(rbind, plot_data)
 ggplot(plot_data, aes(x = x, y = y)) + 
   geom_line(aes(color = Sex)) +
   facet_wrap(~var, scales = "free") +
-  ylim(2.1, 4.1) +
+  ylim(2.1, 4.3) +
   theme_bw() + 
   theme(legend.position = "bottom",
         title = element_text(size = 18),
@@ -636,19 +639,13 @@ compute_linear_models_differenced <- function(dataset){
   mod2 <- lm(e0~Na+etoh+smoking, data=dataset)
   OLS_etoh_smoke <- coeftest(mod2)
   robust_etoh_smoke <- coeftest(mod2, vcov = vcovHC(mod2, type = "HC1"))
-  
-  mod <- lm(e0~., data=dataset)
-  OLS <- coeftest(mod)
-  robust <- coeftest(mod, vcov = vcovHC(mod, type = "HC1"))
   return(list(
     "OLS plain" = OLS_plain,
     "robust plain" = robust_plain,
     "OLS etoh" = OLS_etoh,
     "robust etoh" = robust_etoh,
     "OLS etoh smoke" = OLS_etoh_smoke,
-    "robust etoh smoke" = robust_etoh_smoke,
-    "OLS" = OLS,
-    "robust" = robust
+    "robust etoh smoke" = robust_etoh_smoke
   ))
 }
 
@@ -657,27 +654,21 @@ compute_fixed_effects <- function(dataset){
   predictors <- colnames(dataset %>% dplyr::select(-e0, -country, -year))
   predictors <- paste(predictors, collapse = "+")
   
-  mod0 <- plm(e0~Na, data = dataset, index=c("country","year"), model = "within")
+  mod0 <- plm(e0~Na+factor(year), data = dataset, index=c("country","year"), model = "within")
   fe0 <- coeftest(mod0, vcov = vcovHC(mod0, type = "HC1"))
 
-  mod1 <- plm(e0~Na+etoh, data = dataset, index=c("country","year"), model = "within")
+  mod1 <- plm(e0~Na+etoh+factor(year), data = dataset, index=c("country","year"), model = "within")
   fe1 <- coeftest(mod1, vcov = vcovHC(mod1, type = "HC1"))
 
-  mod2 <- plm(e0~Na+etoh+smoking, data = dataset, index=c("country","year"), model = "within")
+  mod2 <- plm(e0~Na+etoh+smoking+factor(year), data = dataset, index=c("country","year"), model = "within")
   fe2 <- coeftest(mod2, vcov = vcovHC(mod2, type = "HC1"))
-  
-  mod <- lm(e0~Na+etoh+smoking+pc_gdp, data = dataset)
-  OLS <- coeftest(mod)
-  robust <- coeftest(mod, vcov = vcovHC(mod, type = "HC1"))
-  mod <- plm(e0~Na+etoh+smoking+pc_gdp, data = dataset, index=c("country","year"), model = "within")
-  fe <- coeftest(mod, vcov = vcovHC(mod, type = "HC1"))
+  OLS2 <- coeftest(mod2)
+
   return(list(
     "plain" = fe0,
     "etoh"  = fe1,
     "etoh smoke" = fe2,
-    "OLS" = OLS,
-    "robust" = robust,
-    "fixed effects" = fe
+    "OLS" = OLS2
   ))
 }
 @
@@ -690,16 +681,16 @@ We need to correct the standard errors when we estimate this way by using the Hu
 Let the subscript $i$ denote country and $t$ denote time period.
 The model is
 
-$$Y_{it} = \alpha_i + \lambda_t + \beta_1\text{GDP}_{it} +  \beta_2\text{ETOH}_{it} +  \beta_3\text{SMOKE}_{it} + \gamma\text{Na}_{it} + \eps_{it}$$
+$$Y_{it} = \alpha_i + \lambda_t + \beta_1\text{ETOH}_{it} +  \beta_2\text{SMOKE}_{it} + \gamma\text{Na}_{it} + \eps_{it}$$
 $\alpha_i$ is the fixed effect for country $i$.
 $\lambda_t$ is a time effect.
 
 We're interested in the parameter $\gamma$.
-If salt were detrimental to health, we'd expect $\gamma$ to be negative.
+\textcolor{red}{If salt were detrimental to health, we'd expect $\gamma$ to be negative.
 We find the opposite: in all fixed effect specifications that we run, salt has a significant positive effect on life expectancy at age 30.
 In the OLS models, salt has no significant association with life expectancy.
 In the full fixed effects model for males (column (6) in Table~\ref{tab:mfe}), a one unit increase in sodium consumption is associated with an increase in life expectancy of $3.004$ years (significant at 10\% level).
-For females (column (6) in Table~\ref{tab:ffe}), it's associated with a $6.06$ year increase in life expectancy (significant at 1\% level).
+For females (column (6) in Table~\ref{tab:ffe}), it's associated with a $6.06$ year increase in life expectancy (significant at 1\% level).}
 
 <<do_fixed_effects, results="asis", echo=FALSE, cache=TRUE>>=
 compute_fixed_effects(male_absolute) %>% stargazer(style = "qje",
@@ -719,7 +710,7 @@ Next, we look at conventional linear models for the differenced data.
 We have measurements from 1990 and 2010 for each country.
 If we take the difference, we can estimate
 
-$$\Delta Y_{it} =  \Delta \lambda_t + \beta_1\Delta \text{GDP}_{i} +  \beta_2\Delta \text{ETOH}_{i} +  \beta_3\Delta \text{SMOKE}_{i} + \gamma\Delta \text{Na}_{i} + \Delta \eps_{i}$$
+$$\Delta Y_{it} =  \Delta \lambda_t + \beta_1\Delta \text{ETOH}_{i} + \beta_2\Delta \text{SMOKE}_{i} + \gamma\Delta \text{Na}_{i} + \Delta \eps_{i}$$
 This eliminates the need for fixed effects.
 However, this model assumes constant additive treatment effects.
 In particular,
@@ -731,12 +722,13 @@ In particular,
 We report usual OLS standard errors as well as Huber-White robust standard errors.
 
 If salt were detrimental, then we'd expect to see a negative coefficient in the linear model.
+\textcolor{red}{
 We do observe a negative coefficient for males, when we don't include any other variables in the model.
 However, as soon as we add alcohol to the model, the association disappears because increases in alcohol consumption explain a large portion of the decrease in life expectancy.
 We focus on the full model including alcohol, smoking, and per capita GDP.
 For males (column (8) in Table~\ref{tab:mlm}), a one unit increase in sodium consumption from 1990 to 2010 is associated with an increase in life expectancy of $0.271$ years.
 For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ year increase in life expectancy between 1990 and 2010 (significant at 10\% level).
-
+}
 
 <<do_linear_models, results="asis", echo=FALSE, cache=TRUE>>=
 compute_linear_models_differenced(male_diff) %>% stargazer(style = "qje",

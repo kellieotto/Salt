@@ -90,20 +90,20 @@ Sodium consumption is not significantly negatively correlated with life expectan
 
 On the other hand, we'd expect these other three factors to be more strongly associated with life expectancy.
 Alcohol and cigarettes are known to cause negative health outcomes, both short-term and long-term.
-Per capita GDP is a proxy for other things that are strongly associated with good health, such as access to food, high standards of sanitation, and high quality health care.
-Indeed, our analyses confirm these hypotheses: alcohol and smoking are negatively associated with and are strong predictors of life expectancy, while per capita GDP is strongly positively associated with life expectancy.
+Indeed, our analyses confirm these hypotheses: alcohol and smoking are negatively associated with and are strong predictors of life expectancy.
 Thus, we have confidence that the methods we explore below are able to detect an effect when the effect is actually present.
-If
+
 
 \section{Data cleaning}
 
-Data preprocessing includes removing unwanted variables (we keep per capita GDP, alcohol consumption, and per capita cigarette consumption only) and imputing the missing values of the predictors. In particular:
+Data preprocessing includes removing unwanted variables (we keep alcohol consumption and per capita cigarette consumption only) and imputing the missing values of the predictors. In particular:
 
 \begin{itemize}
 \item We merge two data sources. One contains the economic variables, life expectancy, alcohol, and sodium consumption. The other contains the annual number of cigarettes smoked per capita.
 \item We impute the missing 2010 sex-specific alcohol consumption for Taiwan using a linear regression of male and female life expectancy, male and female salt consumption, per capita GDP, and per capita annual cigarette consumption on sex-specific alcohol consumption. Then we impute population average alcohol consumption by taking a weighted average of male and female alcohol consumption, using the proportion of the population that is male/female as the weights.
 \item We impute the missing 1990 overall alcohol consumption for Taiwan in the same way as before, regressing predictors on overall alcohol consumption. Then we use the proportion of alcohol consumption in 2010 attributable to males and females to estimate the male and female sex-specific alcohol consumption in 1990, respectively.
 \end{itemize}
+
 
 
 
@@ -119,7 +119,7 @@ For alcohol, smoking, and per capita GDP, the sign of the correlations are consi
 Sodium is negatively associated with life expectancy for males but positively associated for females.
 
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Sat May 21 09:22:38 2016
+% Wed Jun 22 08:44:37 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rr|rr}
@@ -128,10 +128,9 @@ Sodium is negatively associated with life expectancy for males but positively as
    \hline
    & Differenced & Cross-sectional & Differenced & Cross-sectional \\ 
    \hline
-etoh & -0.74 & -0.36 & -0.55 & -0.02 \\ 
-  smoking & -0.41 & -0.11 & -0.18 & -0.14 \\ 
-  pc\_gdp & 0.49 & 0.73 & 0.37 & 0.71 \\ 
-  Na & -0.41 & -0.11 & 0.05 & 0.1 \\ 
+etoh & -0.73 & -0.36 & -0.55 & -0.01 \\ 
+  smoking & -0.41 & -0.11 & -0.2 & -0.14 \\ 
+  Na & -0.41 & -0.11 & 0.04 & 0.1 \\ 
    \hline
 \end{tabular}
 \caption{Raw correlations with life expectancy at age 30.} 
@@ -184,7 +183,6 @@ Then, for unit $i$, the GPS estimate is
 
 $$ R_i = \frac{1}{\sqrt{2\pi\hat{\sigma}^2}}\exp\left(-\frac{(T_i - x_i'\hat{\beta})^2}{2\hat{\sigma}^2}\right)$$
 Note, we could fit distributions other than the normal by maximum likelihood if desired. 
-%\item Create a regression tree to predict the GPS $R$ using the covariates $X$, so leaves of the tree form strata with similar GPSs.
 \item Stratify observations on the estimated GPS. 
 We use k-means to partition the GPS into bins. 
 We choose the number of strata $k$ to have smallest average silhouette width; this will be data-dependent.
@@ -218,13 +216,14 @@ Thus, the permutation tests based on this stratification method may not be valid
 
 \subsection{Results}
 Figure~\ref{fig:do_corr_plots_m1} shows the results for males using the differenced data (2010-1990).
-Based on the tests using the generalized propensity score stratification, sodium, per capita GDP, and alcohol are all significantly associated with life expectancy at age 30.
+Based on the tests using the generalized propensity score stratification, sodium, and alcohol are all significantly associated with life expectancy at age 30.
 The p-values for association are all above 10\% when considering the tests using prognostic score stratification.
 
 Figure~\ref{fig:do_corr_plots_f1} shows the results for females using the differenced data (2010-1990).
 No variable is significantly associated with life expectancy using either stratification method.
-Sodium consumption has the smallest p-value, just above 10\% for both methods.
+\textcolor{red}{Sodium consumption has the smallest p-value, just above 10\% for both methods.
 Recall that for females, the correlation between sodium and life expectancy is actually positive; thus this result says that sodium has a nonsignificant association with \textit{increases} in life expectancy at age 30.
+}
 
 The p-values do not, in general, show close agreement between the two stratification methods.
 Stratification on the generalized propensity score tends to give smaller p-values than stratification on prognostic scores.
@@ -242,17 +241,16 @@ This does not give evidence for the ``salt is bad'' hypothesis.
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Tue May 24 13:21:42 2016
+% Wed Jun 22 09:45:33 2016
 \begin{table}[ht]
 \centering
-\begin{tabular}{r|rrrr}
+\begin{tabular}{r|rrr}
   \hline
- & etoh & smoking & pc\_gdp & Na \\ 
+ & etoh & smoking & Na \\ 
   \hline
-etoh &  & 0.85 & 0.41 & 0.24 \\ 
-  smoking & 0.76 &  & 0.24 & 0.49 \\ 
-  pc\_gdp & 0.10 & 0.90 &  & 0.78 \\ 
-  Na & 0.00 & 0.02 & 0.00 &  \\ 
+etoh &  & 0.42 & 0.14 \\ 
+  smoking & 0.28 &  & 0.17 \\ 
+  Na & 0.00 & 0.04 &  \\ 
    \hline
 \end{tabular}
 \caption{P-values from balance tests within strata formed by GPS, for male data.
@@ -260,17 +258,16 @@ etoh &  & 0.85 & 0.41 & 0.24 \\
 \label{tab:gps_balance_m}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Tue May 24 13:21:43 2016
+% Wed Jun 22 09:45:33 2016
 \begin{table}[ht]
 \centering
-\begin{tabular}{r|rrrr}
+\begin{tabular}{r|rrr}
   \hline
- & etoh & smoking & pc\_gdp & Na \\ 
+ & etoh & smoking & Na \\ 
   \hline
-etoh &  & 0.61 & 0.42 & 0.22 \\ 
-  smoking & 0.59 &  & 0.78 & 0.71 \\ 
-  pc\_gdp & 0.39 & 0.81 &  & 0.74 \\ 
-  Na & 0.19 & 0.72 & 0.76 &  \\ 
+etoh &  & 0.63 & 0.75 \\ 
+  smoking & 0.62 &  & 0.14 \\ 
+  Na & 0.71 & 0.18 &  \\ 
    \hline
 \end{tabular}
 \caption{P-values from balance tests within strata formed by prognostic score, for male data.
@@ -287,17 +284,16 @@ etoh &  & 0.61 & 0.42 & 0.22 \\
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Tue May 24 13:21:43 2016
+% Wed Jun 22 09:45:33 2016
 \begin{table}[ht]
 \centering
-\begin{tabular}{r|rrrr}
+\begin{tabular}{r|rrr}
   \hline
- & etoh & smoking & pc\_gdp & Na \\ 
+ & etoh & smoking & Na \\ 
   \hline
-etoh &  & 0.59 & 0.23 & 0.85 \\ 
-  smoking & 0.84 &  & 0.20 & 0.07 \\ 
-  pc\_gdp & 0.61 & 0.91 &  & 0.89 \\ 
-  Na & 0.00 & 0.00 & 0.18 &  \\ 
+etoh &  & 0.66 & 0.98 \\ 
+  smoking & 0.36 &  & 0.02 \\ 
+  Na & 0.00 & 0.00 &  \\ 
    \hline
 \end{tabular}
 \caption{P-values from balance tests within strata formed by GPS, for female data.
@@ -305,17 +301,16 @@ etoh &  & 0.59 & 0.23 & 0.85 \\
 \label{tab:gps_balance_f}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Tue May 24 13:21:43 2016
+% Wed Jun 22 09:45:33 2016
 \begin{table}[ht]
 \centering
-\begin{tabular}{r|rrrr}
+\begin{tabular}{r|rrr}
   \hline
- & etoh & smoking & pc\_gdp & Na \\ 
+ & etoh & smoking & Na \\ 
   \hline
-etoh &  & 0.33 & 0.86 & 0.45 \\ 
-  smoking & 0.30 &  & 0.53 & 0.04 \\ 
-  pc\_gdp & 0.86 & 0.56 &  & 0.84 \\ 
-  Na & 0.46 & 0.05 & 0.84 &  \\ 
+etoh &  & 0.14 & 0.85 \\ 
+  smoking & 0.14 &  & 0.01 \\ 
+  Na & 0.84 & 0.01 &  \\ 
    \hline
 \end{tabular}
 \caption{P-values from balance tests within strata formed by prognostic score, for female data.
@@ -342,47 +337,47 @@ Large values indicate more importance.
 We compare several prediction methods: CART, random forests, OLS, and OLS with interaction terms.
 We run each function using default tuning parameters.
 Alcohol is the most important predictor across all models except for CART.
-CART is interesting: after pruning, the final tree for males only inludes per capita GDP and the final tree for females includes per capita GDP and sodium.
+\textcolor{red}{CART is interesting: after pruning, the final tree for males only inludes per capita GDP and the final tree for females includes per capita GDP and sodium.
 For such a simple model, 
 Sodium intake appears to be the least important predictor for different methods for males. 
 However, it is not least important in any model for the female data; smoking appears least important here.
-
+}
 
 
 
  
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Mon May 23 22:16:12 2016
+% Wed Jun 22 09:28:54 2016
 \begin{table}[ht]
 \centering
-\begin{tabular}{r|llll|llll}
+\begin{tabular}{r|lll|lll}
    \hline
- & Absolute &  &  &  & Normalized &  &  &  \\ 
+ & Absolute &  &  & Normalized &  &  \\ 
    \hline
-   & etoh & smoking & pc\_gdp & Na & etoh & smoking & pc\_gdp & Na \\ 
+   & etoh & smoking & Na & etoh & smoking & Na \\ 
    \hline
-CART & 0 & 0 & 0.939 & 0 & 0 & 0 & 0.732 & 0 \\ 
-  Random Forest & 0.53 & 0.24 & 0.409 & 0.25 & 0.775 & 0.351 & 0.599 & 0.366 \\ 
-  OLS & 0.827 & 0.059 & 0.172 & 0.001 & 0.747 & 0.054 & 0.156 & 0.001 \\ 
-  OLS with interactions & 1.803 & 0.578 & 0.84 & 0.478 & 2.607 & 0.836 & 1.215 & 0.691 \\ 
+CART & 0.695 & 0 & 0.037 & 0.472 & 0 & 0.025 \\ 
+  Random Forest & 0.767 & 0.368 & 0.329 & 1.039 & 0.499 & 0.446 \\ 
+  OLS & 0.889 & 0.057 & 0 & 0.716 & 0.046 & 0 \\ 
+  OLS with interactions & 1.13 & 0.161 & 0.171 & 1.066 & 0.152 & 0.161 \\ 
    \hline
 \end{tabular}
 \caption{Variable importance for males, differenced (2010-1990)} 
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Mon May 23 22:16:15 2016
+% Wed Jun 22 09:28:56 2016
 \begin{table}[ht]
 \centering
-\begin{tabular}{r|llll|llll}
+\begin{tabular}{r|lll|lll}
    \hline
- & Absolute &  &  &  & Normalized &  &  &  \\ 
+ & Absolute &  &  & Normalized &  &  \\ 
    \hline
-   & etoh & smoking & pc\_gdp & Na & etoh & smoking & pc\_gdp & Na \\ 
+   & etoh & smoking & Na & etoh & smoking & Na \\ 
    \hline
-CART & 0 & 0 & 0.439 & 0.123 & 0 & 0 & 0.516 & 0.145 \\ 
-  Random Forest & 0.327 & 0.165 & 0.282 & 0.206 & 0.728 & 0.367 & 0.627 & 0.459 \\ 
-  OLS & 0.403 & 0 & 0.056 & 0.118 & 0.473 & 0 & 0.065 & 0.138 \\ 
-  OLS with interactions & 0.761 & 0.155 & 0.466 & 0.309 & 1.27 & 0.259 & 0.778 & 0.516 \\ 
+CART & 0.337 & 0 & 0.197 & 0.355 & 0 & 0.208 \\ 
+  Random Forest & 0.506 & 0.228 & 0.267 & 0.991 & 0.446 & 0.523 \\ 
+  OLS & 0.475 & 0.002 & 0.129 & 0.52 & 0.002 & 0.141 \\ 
+  OLS with interactions & 0.662 & 0.121 & 0.204 & 0.807 & 0.148 & 0.249 \\ 
    \hline
 \end{tabular}
 \caption{Variable importance for females, differenced (2010-1990)} 
@@ -396,19 +391,20 @@ The final importance measure is the average decrease in mean squared error acros
 
 Figure~\ref{fig:rf_variable_importance} shows these measures when we train a random forest with the default R settings.
 Note that we report root mean squared error in the previous section, so the scales are different.
-Although the order of importance varies slightly, the trend is the same for both the male and female datasets: alcohol and per capita GDP are substantially more important than smoking and sodium.
+\textcolor{red}{Although the order of importance varies slightly, the trend is the same for both the male and female datasets: alcohol and per capita GDP are substantially more important than smoking and sodium.}
 
 Figure~\ref{fig:rf_partial_plots} shows the partial dependency plots for each variable.
 We use the random forest to estimate the marginal effect of each variable on changes in life expectancy at age 30 from 1990 to 2010, holding the other variables fixed at their observed values.
 These figures suggest that each variable has a large effect (steep positive or negative slope, graphically) only locally.
-For instance, increases of \$0 to \$10,000 in per capita GDP seem to have a large positive association with increased life expectancy, but increases in per capita GDP larger than \$10,000 have little to no effect.
+\textcolor{red}{For instance, increases of \$0 to \$10,000 in per capita GDP seem to have a large positive association with increased life expectancy, but increases in per capita GDP larger than \$10,000 have little to no effect.
 Similarly, decreases in cigarettes per capita seem to have no association with life expectancy, while increases in cigarettes per capita have a negative association with life expectancy.
 The findings for sodium are less clear.
 It appears that for males, only increases in sodium consumption over 0.2 grams per day are associated with decreases in life expectancy.
 For females, any increase in sodium consumption is associated with increased life expectancy.
 Compared to the other variables, the magnitude of changes in life expectancy according to sodium consumption are smaller; the curves for alcohol and per capita GDP fill the entire plot frame, while the curves for sodium span half of that range.
+}
 
-We've considered variable importance in several manners, and all confirm that sodium is a less important predictor than alcohol and per capita GDP.
+We've considered variable importance in several manners, and all confirm that sodium is a less important predictor than alcohol \textcolor{red}{and per capita GDP.}
 Because the dataset is small and parts of the covariate space may be sparse, we should be careful not to place too much weight in these results.
 Furthermore, this measure of variable importance is specific to the random forest models that we estimated.
 One must bear in mind that importance may depend on the choice of model.
@@ -452,87 +448,81 @@ We need to correct the standard errors when we estimate this way by using the Hu
 Let the subscript $i$ denote country and $t$ denote time period.
 The model is
 
-$$Y_{it} = \alpha_i + \lambda_t + \beta_1\text{GDP}_{it} +  \beta_2\text{ETOH}_{it} +  \beta_3\text{SMOKE}_{it} + \gamma\text{Na}_{it} + \eps_{it}$$
+$$Y_{it} = \alpha_i + \lambda_t + \beta_1\text{ETOH}_{it} +  \beta_2\text{SMOKE}_{it} + \gamma\text{Na}_{it} + \eps_{it}$$
 $\alpha_i$ is the fixed effect for country $i$.
 $\lambda_t$ is a time effect.
 
 We're interested in the parameter $\gamma$.
-If salt were detrimental to health, we'd expect $\gamma$ to be negative.
+\textcolor{red}{If salt were detrimental to health, we'd expect $\gamma$ to be negative.
 We find the opposite: in all fixed effect specifications that we run, salt has a significant positive effect on life expectancy at age 30.
 In the OLS models, salt has no significant association with life expectancy.
 In the full fixed effects model for males (column (6) in Table~\ref{tab:mfe}), a one unit increase in sodium consumption is associated with an increase in life expectancy of $3.004$ years (significant at 10\% level).
-For females (column (6) in Table~\ref{tab:ffe}), it's associated with a $6.06$ year increase in life expectancy (significant at 1\% level).
+For females (column (6) in Table~\ref{tab:ffe}), it's associated with a $6.06$ year increase in life expectancy (significant at 1\% level).}
 
 
 % Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Sat, May 21, 2016 - 16:21:10
+% Date and time: Wed, Jun 22, 2016 - 09:26:08
 \begin{table}[!htbp] \centering 
   \caption{Male cross-sectional data} 
   \label{tab:mfe} 
-\begin{tabular}{@{\extracolsep{5pt}}lcccccc} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
-\\[-1.8ex] & \multicolumn{6}{c}{ } \\ 
- & Fixed Effects & Fixed Effects & Fixed Effects & OLS & Robust & Fixed Effects \\ 
-\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6)\\ 
+\\[-1.8ex] & \multicolumn{4}{c}{ } \\ 
+ & Fixed Effects & Fixed Effects & Fixed Effects & OLS \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4)\\ 
 \hline \\[-1.8ex] 
- Na & 4.576$^{**}$ & 8.436$^{***}$ & 6.234$^{**}$ & $-$0.509 & $-$0.509 & 3.004$^{*}$ \\ 
-  & (2.112) & (2.566) & (2.859) & (0.882) & (0.851) & (1.509) \\ 
-  & & & & & & \\ 
- etoh &  & $-$0.316$^{***}$ & $-$0.170 & $-$0.250$^{***}$ & $-$0.250$^{***}$ & $-$0.131$^{*}$ \\ 
-  &  & (0.113) & (0.107) & (0.069) & (0.067) & (0.066) \\ 
-  & & & & & & \\ 
- smoking &  &  & $-$0.003$^{***}$ & 0.0003 & 0.0003 & $-$0.001$^{***}$ \\ 
-  &  &  & (0.001) & (0.0004) & (0.0004) & (0.0003) \\ 
-  & & & & & & \\ 
- pc\_gdp &  &  &  & 0.0002$^{***}$ & 0.0002$^{***}$ & 0.0002$^{***}$ \\ 
-  &  &  &  & (0.00003) & (0.0001) & (0.00005) \\ 
-  & & & & & & \\ 
- Constant &  &  &  & 44.289$^{***}$ & 44.289$^{***}$ &  \\ 
-  &  &  &  & (3.527) & (4.050) &  \\ 
-  & & & & & & \\ 
+ Na & $-$3.498$^{**}$ & $-$0.186 & $-$0.024 & $-$0.024 \\ 
+  & (1.492) & (0.899) & (0.952) & (1.236) \\ 
+  & & & & \\ 
+ etoh &  & $-$0.255$^{***}$ & $-$0.239$^{***}$ & $-$0.239$^{***}$ \\ 
+  &  & (0.064) & (0.064) & (0.053) \\ 
+  & & & & \\ 
+ smoking &  &  & $-$0.0004 & $-$0.0004 \\ 
+  &  &  & (0.0003) & (0.0003) \\ 
+  & & & & \\ 
+ factor(year)2010 & 4.197$^{***}$ & 4.099$^{***}$ & 3.884$^{***}$ & 3.884$^{***}$ \\ 
+  & (0.216) & (0.233) & (0.334) & (0.319) \\ 
+  & & & & \\ 
 \hline 
 \hline \\[-1.8ex] 
-\textit{Notes:} & \multicolumn{6}{r}{$^{***}$Significant at the 1 percent level.} \\ 
- & \multicolumn{6}{r}{$^{**}$Significant at the 5 percent level.} \\ 
- & \multicolumn{6}{r}{$^{*}$Significant at the 10 percent level.} \\ 
- & \multicolumn{6}{r}{} \\ 
+\textit{Notes:} & \multicolumn{4}{r}{$^{***}$Significant at the 1 percent level.} \\ 
+ & \multicolumn{4}{r}{$^{**}$Significant at the 5 percent level.} \\ 
+ & \multicolumn{4}{r}{$^{*}$Significant at the 10 percent level.} \\ 
+ & \multicolumn{4}{r}{} \\ 
 \end{tabular} 
 \end{table} 
 
 % Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Sat, May 21, 2016 - 16:21:10
+% Date and time: Wed, Jun 22, 2016 - 09:26:08
 \begin{table}[!htbp] \centering 
   \caption{Female cross-sectional data} 
   \label{tab:ffe} 
-\begin{tabular}{@{\extracolsep{5pt}}lcccccc} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
-\\[-1.8ex] & \multicolumn{6}{c}{ } \\ 
- & Fixed Effects & Fixed Effects & Fixed Effects & OLS & Robust & Fixed Effects \\ 
-\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6)\\ 
+\\[-1.8ex] & \multicolumn{4}{c}{ } \\ 
+ & Fixed Effects & Fixed Effects & Fixed Effects & OLS \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4)\\ 
 \hline \\[-1.8ex] 
- Na & 9.686$^{***}$ & 11.219$^{***}$ & 9.641$^{***}$ & 0.933 & 0.933 & 6.060$^{***}$ \\ 
-  & (1.324) & (0.940) & (1.076) & (0.665) & (0.751) & (1.231) \\ 
-  & & & & & & \\ 
- etoh &  & $-$0.605$^{***}$ & $-$0.407$^{***}$ & $-$0.156 & $-$0.156 & $-$0.247$^{**}$ \\ 
-  &  & (0.135) & (0.146) & (0.132) & (0.132) & (0.119) \\ 
-  & & & & & & \\ 
- smoking &  &  & $-$0.001$^{***}$ & $-$0.0001 & $-$0.0001 & $-$0.001$^{**}$ \\ 
-  &  &  & (0.0004) & (0.0003) & (0.0003) & (0.0003) \\ 
-  & & & & & & \\ 
- pc\_gdp &  &  &  & 0.0002$^{***}$ & 0.0002$^{***}$ & 0.0001$^{***}$ \\ 
-  &  &  &  & (0.00002) & (0.00004) & (0.00004) \\ 
-  & & & & & & \\ 
- Constant &  &  &  & 44.675$^{***}$ & 44.675$^{***}$ &  \\ 
-  &  &  &  & (2.486) & (3.065) &  \\ 
-  & & & & & & \\ 
+ Na & 0.322 & 2.118$^{*}$ & 2.180$^{*}$ & 2.180$^{*}$ \\ 
+  & (1.286) & (1.087) & (1.094) & (1.125) \\ 
+  & & & & \\ 
+ etoh &  & $-$0.419$^{***}$ & $-$0.410$^{***}$ & $-$0.410$^{***}$ \\ 
+  &  & (0.115) & (0.120) & (0.101) \\ 
+  & & & & \\ 
+ smoking &  &  & $-$0.0001 & $-$0.0001 \\ 
+  &  &  & (0.0002) & (0.0003) \\ 
+  & & & & \\ 
+ factor(year)2010 & 3.192$^{***}$ & 2.947$^{***}$ & 2.897$^{***}$ & 2.897$^{***}$ \\ 
+  & (0.221) & (0.264) & (0.295) & (0.328) \\ 
+  & & & & \\ 
 \hline 
 \hline \\[-1.8ex] 
-\textit{Notes:} & \multicolumn{6}{r}{$^{***}$Significant at the 1 percent level.} \\ 
- & \multicolumn{6}{r}{$^{**}$Significant at the 5 percent level.} \\ 
- & \multicolumn{6}{r}{$^{*}$Significant at the 10 percent level.} \\ 
- & \multicolumn{6}{r}{} \\ 
+\textit{Notes:} & \multicolumn{4}{r}{$^{***}$Significant at the 1 percent level.} \\ 
+ & \multicolumn{4}{r}{$^{**}$Significant at the 5 percent level.} \\ 
+ & \multicolumn{4}{r}{$^{*}$Significant at the 10 percent level.} \\ 
+ & \multicolumn{4}{r}{} \\ 
 \end{tabular} 
 \end{table} 
 
@@ -542,7 +532,7 @@ Next, we look at conventional linear models for the differenced data.
 We have measurements from 1990 and 2010 for each country.
 If we take the difference, we can estimate
 
-$$\Delta Y_{it} =  \Delta \lambda_t + \beta_1\Delta \text{GDP}_{i} +  \beta_2\Delta \text{ETOH}_{i} +  \beta_3\Delta \text{SMOKE}_{i} + \gamma\Delta \text{Na}_{i} + \Delta \eps_{i}$$
+$$\Delta Y_{it} =  \Delta \lambda_t + \beta_1\Delta \text{ETOH}_{i} + \beta_2\Delta \text{SMOKE}_{i} + \gamma\Delta \text{Na}_{i} + \Delta \eps_{i}$$
 This eliminates the need for fixed effects.
 However, this model assumes constant additive treatment effects.
 In particular,
@@ -554,83 +544,78 @@ In particular,
 We report usual OLS standard errors as well as Huber-White robust standard errors.
 
 If salt were detrimental, then we'd expect to see a negative coefficient in the linear model.
+\textcolor{red}{
 We do observe a negative coefficient for males, when we don't include any other variables in the model.
 However, as soon as we add alcohol to the model, the association disappears because increases in alcohol consumption explain a large portion of the decrease in life expectancy.
 We focus on the full model including alcohol, smoking, and per capita GDP.
 For males (column (8) in Table~\ref{tab:mlm}), a one unit increase in sodium consumption from 1990 to 2010 is associated with an increase in life expectancy of $0.271$ years.
 For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ year increase in life expectancy between 1990 and 2010 (significant at 10\% level).
-
+}
 
 
 % Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Sat, May 21, 2016 - 16:21:11
+% Date and time: Wed, Jun 22, 2016 - 08:45:11
 \begin{table}[!htbp] \centering 
   \caption{Male, differenced regressions (2010-1990)} 
   \label{tab:mlm} 
-\begin{tabular}{@{\extracolsep{5pt}}lcccccccc} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccccc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
-\\[-1.8ex] & \multicolumn{8}{c}{ } \\ 
- & OLS & Robust & OLS & Robust & OLS & Robust & OLS & Robust \\ 
-\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6) & (7) & (8)\\ 
+\\[-1.8ex] & \multicolumn{6}{c}{ } \\ 
+ & OLS & Robust & OLS & Robust & OLS & Robust \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6)\\ 
 \hline \\[-1.8ex] 
- Na & $-$3.463$^{**}$ & $-$3.463$^{**}$ & $-$0.170 & $-$0.170 & $-$0.011 & $-$0.011 & 0.271 & 0.271 \\ 
-  & (1.326) & (1.485) & (1.177) & (0.863) & (1.180) & (0.943) & (1.127) & (0.924) \\ 
-  & & & & & & & & \\ 
- etoh &  &  & $-$0.254$^{***}$ & $-$0.254$^{***}$ & $-$0.238$^{***}$ & $-$0.238$^{***}$ & $-$0.214$^{***}$ & $-$0.214$^{***}$ \\ 
-  &  &  & (0.049) & (0.062) & (0.051) & (0.063) & (0.049) & (0.059) \\ 
-  & & & & & & & & \\ 
- smoking &  &  &  &  & $-$0.0004 & $-$0.0004 & $-$0.0003 & $-$0.0003 \\ 
-  &  &  &  &  & (0.0003) & (0.0003) & (0.0003) & (0.0003) \\ 
-  & & & & & & & & \\ 
- pc\_gdp &  &  &  &  &  &  & 0.0001$^{**}$ & 0.0001 \\ 
-  &  &  &  &  &  &  & (0.00003) & (0.00004) \\ 
-  & & & & & & & & \\ 
- Constant & 4.115$^{***}$ & 4.115$^{***}$ & 4.016$^{***}$ & 4.016$^{***}$ & 3.806$^{***}$ & 3.806$^{***}$ & 3.068$^{***}$ & 3.068$^{***}$ \\ 
-  & (0.326) & (0.211) & (0.244) & (0.226) & (0.305) & (0.331) & (0.455) & (0.629) \\ 
-  & & & & & & & & \\ 
+ Na & $-$3.498$^{**}$ & $-$3.498$^{**}$ & $-$0.186 & $-$0.186 & $-$0.024 & $-$0.024 \\ 
+  & (1.363) & (1.514) & (1.232) & (0.920) & (1.236) & (0.982) \\ 
+  & & & & & & \\ 
+ etoh &  &  & $-$0.255$^{***}$ & $-$0.255$^{***}$ & $-$0.239$^{***}$ & $-$0.239$^{***}$ \\ 
+  &  &  & (0.051) & (0.065) & (0.053) & (0.066) \\ 
+  & & & & & & \\ 
+ smoking &  &  &  &  & $-$0.0004 & $-$0.0004 \\ 
+  &  &  &  &  & (0.0003) & (0.0003) \\ 
+  & & & & & & \\ 
+ Constant & 4.197$^{***}$ & 4.197$^{***}$ & 4.099$^{***}$ & 4.099$^{***}$ & 3.884$^{***}$ & 3.884$^{***}$ \\ 
+  & (0.335) & (0.220) & (0.256) & (0.238) & (0.319) & (0.344) \\ 
+  & & & & & & \\ 
 \hline 
 \hline \\[-1.8ex] 
-\textit{Notes:} & \multicolumn{8}{r}{$^{***}$Significant at the 1 percent level.} \\ 
- & \multicolumn{8}{r}{$^{**}$Significant at the 5 percent level.} \\ 
- & \multicolumn{8}{r}{$^{*}$Significant at the 10 percent level.} \\ 
- & \multicolumn{8}{r}{} \\ 
+\textit{Notes:} & \multicolumn{6}{r}{$^{***}$Significant at the 1 percent level.} \\ 
+ & \multicolumn{6}{r}{$^{**}$Significant at the 5 percent level.} \\ 
+ & \multicolumn{6}{r}{$^{*}$Significant at the 10 percent level.} \\ 
+ & \multicolumn{6}{r}{} \\ 
 \end{tabular} 
 \end{table} 
 
 % Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Sat, May 21, 2016 - 16:21:11
+% Date and time: Wed, Jun 22, 2016 - 08:45:11
 \begin{table}[!htbp] \centering 
   \caption{Female, differenced regressions (2010-1990)} 
   \label{tab:flm} 
-\begin{tabular}{@{\extracolsep{5pt}}lcccccccc} 
+\begin{tabular}{@{\extracolsep{5pt}}lcccccc} 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
-\\[-1.8ex] & \multicolumn{8}{c}{ } \\ 
- & OLS & Robust &  &  &  &  &  &  \\ 
-\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6) & (7) & (8)\\ 
+\\[-1.8ex] & \multicolumn{6}{c}{ } \\ 
+ & OLS & Robust &  &  &  &  \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6)\\ 
 \hline \\[-1.8ex] 
- Na & 0.356 & 0.356 & 2.080$^{*}$ & 2.080$^{*}$ & 2.110$^{*}$ & 2.110$^{*}$ & 2.073$^{*}$ & 2.073$^{*}$ \\ 
-  & (1.207) & (1.279) & (1.043) & (1.058) & (1.079) & (1.081) & (1.065) & (1.031) \\ 
-  & & & & & & & & \\ 
- etoh &  &  & $-$0.403$^{***}$ & $-$0.403$^{***}$ & $-$0.398$^{***}$ & $-$0.398$^{***}$ & $-$0.358$^{***}$ & $-$0.358$^{***}$ \\ 
-  &  &  & (0.091) & (0.114) & (0.097) & (0.120) & (0.100) & (0.112) \\ 
-  & & & & & & & & \\ 
- smoking &  &  &  &  & $-$0.00004 & $-$0.00004 & $-$0.00001 & $-$0.00001 \\ 
-  &  &  &  &  & (0.0002) & (0.0002) & (0.0002) & (0.0002) \\ 
-  & & & & & & & & \\ 
- pc\_gdp &  &  &  &  &  &  & 0.00003 & 0.00003 \\ 
-  &  &  &  &  &  &  & (0.00002) & (0.00003) \\ 
-  & & & & & & & & \\ 
- Constant & 3.114$^{***}$ & 3.114$^{***}$ & 2.879$^{***}$ & 2.879$^{***}$ & 2.855$^{***}$ & 2.855$^{***}$ & 2.519$^{***}$ & 2.519$^{***}$ \\ 
-  & (0.322) & (0.211) & (0.263) & (0.247) & (0.315) & (0.286) & (0.395) & (0.440) \\ 
-  & & & & & & & & \\ 
+ Na & 0.322 & 0.322 & 2.118$^{*}$ & 2.118$^{*}$ & 2.180$^{*}$ & 2.180$^{*}$ \\ 
+  & (1.258) & (1.305) & (1.088) & (1.113) & (1.125) & (1.129) \\ 
+  & & & & & & \\ 
+ etoh &  &  & $-$0.419$^{***}$ & $-$0.419$^{***}$ & $-$0.410$^{***}$ & $-$0.410$^{***}$ \\ 
+  &  &  & (0.095) & (0.118) & (0.101) & (0.123) \\ 
+  & & & & & & \\ 
+ smoking &  &  &  &  & $-$0.0001 & $-$0.0001 \\ 
+  &  &  &  &  & (0.0003) & (0.0002) \\ 
+  & & & & & & \\ 
+ Constant & 3.192$^{***}$ & 3.192$^{***}$ & 2.947$^{***}$ & 2.947$^{***}$ & 2.897$^{***}$ & 2.897$^{***}$ \\ 
+  & (0.336) & (0.224) & (0.275) & (0.270) & (0.328) & (0.305) \\ 
+  & & & & & & \\ 
 \hline 
 \hline \\[-1.8ex] 
-\textit{Notes:} & \multicolumn{8}{r}{$^{***}$Significant at the 1 percent level.} \\ 
- & \multicolumn{8}{r}{$^{**}$Significant at the 5 percent level.} \\ 
- & \multicolumn{8}{r}{$^{*}$Significant at the 10 percent level.} \\ 
- & \multicolumn{8}{r}{} \\ 
+\textit{Notes:} & \multicolumn{6}{r}{$^{***}$Significant at the 1 percent level.} \\ 
+ & \multicolumn{6}{r}{$^{**}$Significant at the 5 percent level.} \\ 
+ & \multicolumn{6}{r}{$^{*}$Significant at the 10 percent level.} \\ 
+ & \multicolumn{6}{r}{} \\ 
 \end{tabular} 
 \end{table} 
 
@@ -668,16 +653,16 @@ For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ 
 ##  [4] nloptr_1.0.4        foreign_0.8-66      DBI_0.3.1          
 ##  [7] RColorBrewer_1.1-2  plyr_1.8.3          stringr_1.0.0      
 ## [10] MatrixModels_0.4-1  munsell_0.4.2       gtable_0.1.2       
-## [13] bdsmatrix_1.3-2     evaluate_0.8        latticeExtra_0.6-26
-## [16] SparseM_1.7         quantreg_5.19       pbkrtest_0.4-2     
-## [19] parallel_3.2.0      highr_0.5.1         proto_0.3-10       
-## [22] Rcpp_0.12.2         acepack_1.3-3.3     scales_0.3.0       
-## [25] formatR_1.2.1       lme4_1.1-10         gridExtra_2.0.0    
-## [28] digest_0.6.8        stringi_1.0-1       tools_3.2.0        
-## [31] magrittr_1.5        lazyeval_0.1.10     car_2.1-0          
-## [34] MASS_7.3-45         Matrix_1.2-2        assertthat_0.1     
-## [37] minqa_1.2.4         R6_2.1.1            nnet_7.3-11        
-## [40] nlme_3.1-122
+## [13] bdsmatrix_1.3-2     codetools_0.2-14    evaluate_0.8       
+## [16] labeling_0.3        latticeExtra_0.6-26 SparseM_1.7        
+## [19] quantreg_5.19       pbkrtest_0.4-2      parallel_3.2.0     
+## [22] highr_0.5.1         proto_0.3-10        Rcpp_0.12.2        
+## [25] acepack_1.3-3.3     scales_0.3.0        formatR_1.2.1      
+## [28] lme4_1.1-10         gridExtra_2.0.0     digest_0.6.8       
+## [31] stringi_1.0-1       tools_3.2.0         magrittr_1.5       
+## [34] lazyeval_0.1.10     car_2.1-0           MASS_7.3-45        
+## [37] Matrix_1.2-2        assertthat_0.1      minqa_1.2.4        
+## [40] R6_2.1.1            nnet_7.3-11         nlme_3.1-122
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
