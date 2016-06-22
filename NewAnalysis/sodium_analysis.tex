@@ -100,8 +100,19 @@ Data preprocessing includes removing unwanted variables (we keep alcohol consump
 
 \begin{itemize}
 \item We merge two data sources. One contains the economic variables, life expectancy, alcohol, and sodium consumption. The other contains the annual number of cigarettes smoked per capita.
-\item We impute the missing 2010 sex-specific alcohol consumption for Taiwan using a linear regression of male and female life expectancy, male and female salt consumption, per capita GDP, and per capita annual cigarette consumption on sex-specific alcohol consumption. Then we impute population average alcohol consumption by taking a weighted average of male and female alcohol consumption, using the proportion of the population that is male/female as the weights.
-\item We impute the missing 1990 overall alcohol consumption for Taiwan in the same way as before, regressing predictors on overall alcohol consumption. Then we use the proportion of alcohol consumption in 2010 attributable to males and females to estimate the male and female sex-specific alcohol consumption in 1990, respectively.
+\item There is no data for overall alcohol consumption levels in 2010, so we impute them. 
+A country's population average alcohol consumption is estimated by taking a weighted average of the country's male and female alcohol consumption, where weights are the proportion of males and females in the population.  
+\item On the other hand, there is no sex-specific alcohol consumption data for 1990.  
+For each country, we use the proportion of alcohol consumption in 2010 attributable to males and females to estimate the male and female sex-specific alcohol consumption in 1990, respectively, using the formula
+
+$$\text{Male ETOH in 1990} \approx \text{Overall ETOH in 1990} \times \frac{\text{ Male ETOH in 2010}}{\text{ Imputed overall ETOH in 2010}}$$
+
+\noindent A similar formula applies to females.
+\item Taiwan is missing all of its alcohol data, so we impute them.
+We impute the missing 2010 sex-specific alcohol consumption for Taiwan using a linear regression of sex-specific alcohol consumption on male and female life expectancy, male and female salt consumption, per capita GDP, and per capita annual cigarette consumption. 
+Then we impute population average alcohol consumption by taking a weighted average of male and female alcohol consumption, using the proportion of the population that is male and female as the weights. 
+We impute the missing 1990 overall alcohol consumption for Taiwan in the same way, regressing overall alcohol consumption on the predictors. 
+Then we use the proportion of alcohol consumption in 2010 attributable to males and females to estimate the male and female sex-specific alcohol consumption in 1990, respectively.
 \end{itemize}
 
 
@@ -241,7 +252,7 @@ This does not give evidence for the ``salt is bad'' hypothesis.
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 09:45:33 2016
+% Wed Jun 22 15:52:47 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -258,7 +269,7 @@ etoh &  & 0.42 & 0.14 \\
 \label{tab:gps_balance_m}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 09:45:33 2016
+% Wed Jun 22 15:52:47 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -272,7 +283,7 @@ etoh &  & 0.63 & 0.75 \\
 \end{tabular}
 \caption{P-values from balance tests within strata formed by prognostic score, for male data.
                     Rows are the notional treatment and columns are covariates.} 
-\label{tab:gps_balance_m}
+\label{tab:prog_balance_m}
 \end{table}
 
 
@@ -284,7 +295,7 @@ etoh &  & 0.63 & 0.75 \\
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 09:45:33 2016
+% Wed Jun 22 15:52:47 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -301,7 +312,7 @@ etoh &  & 0.66 & 0.98 \\
 \label{tab:gps_balance_f}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 09:45:33 2016
+% Wed Jun 22 15:52:47 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -315,7 +326,7 @@ etoh &  & 0.14 & 0.85 \\
 \end{tabular}
 \caption{P-values from balance tests within strata formed by prognostic score, for female data.
                     Rows are the notional treatment and columns are covariates.} 
-\label{tab:gps_balance_f}
+\label{tab:prog_balance_f}
 \end{table}
 
 
@@ -336,12 +347,10 @@ Large values indicate more importance.
 \subsection{Results}
 We compare several prediction methods: CART, random forests, OLS, and OLS with interaction terms.
 We run each function using default tuning parameters.
-Alcohol is the most important predictor across all models except for CART.
-\textcolor{red}{CART is interesting: after pruning, the final tree for males only inludes per capita GDP and the final tree for females includes per capita GDP and sodium.
-For such a simple model, 
-Sodium intake appears to be the least important predictor for different methods for males. 
-However, it is not least important in any model for the female data; smoking appears least important here.
-}
+Alcohol is consistently the most important predictor for males, while
+neither smoking nor sodium is consistently least important across the methods. 
+In the female data, alcohol is the most important predictor and smoking is the least important.
+
 
 
 
@@ -390,24 +399,25 @@ Instead of permuting the predictor of interest and evaluating the full model on 
 The final importance measure is the average decrease in mean squared error across trees in the forest.
 
 Figure~\ref{fig:rf_variable_importance} shows these measures when we train a random forest with the default R settings.
-Note that we report root mean squared error in the previous section, so the scales are different.
-\textcolor{red}{Although the order of importance varies slightly, the trend is the same for both the male and female datasets: alcohol and per capita GDP are substantially more important than smoking and sodium.}
+Note that we report root mean squared error for the overall random forest predictor in the previous section, so the scales of the two measures are not comparable.
+The order of variable importance is the same for both the male and female datasets: 
+alcohol is substantially more important than smoking and sodium, but smoking is slightly more important than sodium.
 
 Figure~\ref{fig:rf_partial_plots} shows the partial dependency plots for each variable.
-We use the random forest to estimate the marginal effect of each variable on changes in life expectancy at age 30 from 1990 to 2010, holding the other variables fixed at their observed values.
+We use the random forest to estimate the marginal effect of each variable on changes in life expectancy at age 30 from 1990 to 2010, 
+holding the other variables fixed at their observed values.
 These figures suggest that each variable has a large effect (steep positive or negative slope, graphically) only locally.
-\textcolor{red}{For instance, increases of \$0 to \$10,000 in per capita GDP seem to have a large positive association with increased life expectancy, but increases in per capita GDP larger than \$10,000 have little to no effect.
-Similarly, decreases in cigarettes per capita seem to have no association with life expectancy, while increases in cigarettes per capita have a negative association with life expectancy.
+For instance, decreases in cigarettes per capita seem to have no association with life expectancy, but any increase in cigarettes per capita has a negative association with life expectancy.
 The findings for sodium are less clear.
 It appears that for males, only increases in sodium consumption over 0.2 grams per day are associated with decreases in life expectancy.
 For females, any increase in sodium consumption is associated with increased life expectancy.
-Compared to the other variables, the magnitude of changes in life expectancy according to sodium consumption are smaller; the curves for alcohol and per capita GDP fill the entire plot frame, while the curves for sodium span half of that range.
-}
+Compared to the other variables, the magnitude of changes in life expectancy according to sodium consumption are smaller; 
+the curves for alcohol and per capita GDP fill the entire plot frame, while the curves for sodium span half of that range.
 
-We've considered variable importance in several manners, and all confirm that sodium is a less important predictor than alcohol \textcolor{red}{and per capita GDP.}
+We've considered variable importance in several manners, and all confirm that sodium is a less important predictor than alcohol.
 Because the dataset is small and parts of the covariate space may be sparse, we should be careful not to place too much weight in these results.
-Furthermore, this measure of variable importance is specific to the random forest models that we estimated.
-One must bear in mind that importance may depend on the choice of model.
+Furthermore, one must bear in mind that importance may depend on the choice of model.
+The four models that we've considered here show similar patterns of variable importance, giving us confidence in the relative magnitudes of each variable's predictive power.
 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
@@ -439,7 +449,6 @@ One must bear in mind that importance may depend on the choice of model.
 \section{Linear models}
 
 
-\subsection{Fixed Effects Model}
 First, we look at the data cross-sectionally.
 To account for unobserved confounding variables, we add a fixed effect term for each country.
 The key assumption (aside from the usual linear model/response schedule assumptions) is that these country-specific effects do not change over time; all that changes is the treatment over time.
@@ -453,87 +462,13 @@ $\alpha_i$ is the fixed effect for country $i$.
 $\lambda_t$ is a time effect.
 
 We're interested in the parameter $\gamma$.
-\textcolor{red}{If salt were detrimental to health, we'd expect $\gamma$ to be negative.
-We find the opposite: in all fixed effect specifications that we run, salt has a significant positive effect on life expectancy at age 30.
-In the OLS models, salt has no significant association with life expectancy.
-In the full fixed effects model for males (column (6) in Table~\ref{tab:mfe}), a one unit increase in sodium consumption is associated with an increase in life expectancy of $3.004$ years (significant at 10\% level).
-For females (column (6) in Table~\ref{tab:ffe}), it's associated with a $6.06$ year increase in life expectancy (significant at 1\% level).}
+If salt were detrimental to health, we'd expect $\gamma$ to be negative.
 
-
-% Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Wed, Jun 22, 2016 - 09:26:08
-\begin{table}[!htbp] \centering 
-  \caption{Male cross-sectional data} 
-  \label{tab:mfe} 
-\begin{tabular}{@{\extracolsep{5pt}}lcccc} 
-\\[-1.8ex]\hline 
-\hline \\[-1.8ex] 
-\\[-1.8ex] & \multicolumn{4}{c}{ } \\ 
- & Fixed Effects & Fixed Effects & Fixed Effects & OLS \\ 
-\\[-1.8ex] & (1) & (2) & (3) & (4)\\ 
-\hline \\[-1.8ex] 
- Na & $-$3.498$^{**}$ & $-$0.186 & $-$0.024 & $-$0.024 \\ 
-  & (1.492) & (0.899) & (0.952) & (1.236) \\ 
-  & & & & \\ 
- etoh &  & $-$0.255$^{***}$ & $-$0.239$^{***}$ & $-$0.239$^{***}$ \\ 
-  &  & (0.064) & (0.064) & (0.053) \\ 
-  & & & & \\ 
- smoking &  &  & $-$0.0004 & $-$0.0004 \\ 
-  &  &  & (0.0003) & (0.0003) \\ 
-  & & & & \\ 
- factor(year)2010 & 4.197$^{***}$ & 4.099$^{***}$ & 3.884$^{***}$ & 3.884$^{***}$ \\ 
-  & (0.216) & (0.233) & (0.334) & (0.319) \\ 
-  & & & & \\ 
-\hline 
-\hline \\[-1.8ex] 
-\textit{Notes:} & \multicolumn{4}{r}{$^{***}$Significant at the 1 percent level.} \\ 
- & \multicolumn{4}{r}{$^{**}$Significant at the 5 percent level.} \\ 
- & \multicolumn{4}{r}{$^{*}$Significant at the 10 percent level.} \\ 
- & \multicolumn{4}{r}{} \\ 
-\end{tabular} 
-\end{table} 
-
-% Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Wed, Jun 22, 2016 - 09:26:08
-\begin{table}[!htbp] \centering 
-  \caption{Female cross-sectional data} 
-  \label{tab:ffe} 
-\begin{tabular}{@{\extracolsep{5pt}}lcccc} 
-\\[-1.8ex]\hline 
-\hline \\[-1.8ex] 
-\\[-1.8ex] & \multicolumn{4}{c}{ } \\ 
- & Fixed Effects & Fixed Effects & Fixed Effects & OLS \\ 
-\\[-1.8ex] & (1) & (2) & (3) & (4)\\ 
-\hline \\[-1.8ex] 
- Na & 0.322 & 2.118$^{*}$ & 2.180$^{*}$ & 2.180$^{*}$ \\ 
-  & (1.286) & (1.087) & (1.094) & (1.125) \\ 
-  & & & & \\ 
- etoh &  & $-$0.419$^{***}$ & $-$0.410$^{***}$ & $-$0.410$^{***}$ \\ 
-  &  & (0.115) & (0.120) & (0.101) \\ 
-  & & & & \\ 
- smoking &  &  & $-$0.0001 & $-$0.0001 \\ 
-  &  &  & (0.0002) & (0.0003) \\ 
-  & & & & \\ 
- factor(year)2010 & 3.192$^{***}$ & 2.947$^{***}$ & 2.897$^{***}$ & 2.897$^{***}$ \\ 
-  & (0.221) & (0.264) & (0.295) & (0.328) \\ 
-  & & & & \\ 
-\hline 
-\hline \\[-1.8ex] 
-\textit{Notes:} & \multicolumn{4}{r}{$^{***}$Significant at the 1 percent level.} \\ 
- & \multicolumn{4}{r}{$^{**}$Significant at the 5 percent level.} \\ 
- & \multicolumn{4}{r}{$^{*}$Significant at the 10 percent level.} \\ 
- & \multicolumn{4}{r}{} \\ 
-\end{tabular} 
-\end{table} 
-
-
-\subsection{Differenced Model}
-Next, we look at conventional linear models for the differenced data. 
-We have measurements from 1990 and 2010 for each country.
-If we take the difference, we can estimate
+It is numerically equivalent to estimate the model using the differenced data, subtracting each country's data point in 1990 from its data in 2010.
+The model then becomes
 
 $$\Delta Y_{it} =  \Delta \lambda_t + \beta_1\Delta \text{ETOH}_{i} + \beta_2\Delta \text{SMOKE}_{i} + \gamma\Delta \text{Na}_{i} + \Delta \eps_{i}$$
-This eliminates the need for fixed effects.
+This eliminates the need to estimate fixed effects, making estimation more efficient.
 However, this model assumes constant additive treatment effects.
 In particular,
 \begin{enumerate}
@@ -543,18 +478,19 @@ In particular,
 
 We report usual OLS standard errors as well as Huber-White robust standard errors.
 
-If salt were detrimental, then we'd expect to see a negative coefficient in the linear model.
-\textcolor{red}{
-We do observe a negative coefficient for males, when we don't include any other variables in the model.
-However, as soon as we add alcohol to the model, the association disappears because increases in alcohol consumption explain a large portion of the decrease in life expectancy.
-We focus on the full model including alcohol, smoking, and per capita GDP.
-For males (column (8) in Table~\ref{tab:mlm}), a one unit increase in sodium consumption from 1990 to 2010 is associated with an increase in life expectancy of $0.271$ years.
-For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ year increase in life expectancy between 1990 and 2010 (significant at 10\% level).
-}
+
+Indeed, in all model specifications that we run for the male data, salt has a negative effect on life expectancy at age 30.
+In the full model for males (column (6) in Table~\ref{tab:mlm}), a one unit increase in sodium consumption is associated with a decrease in life expectancy of $0.024$ years.
+The sign of the association is positive for females:
+after controlling for alcohol and smoking, (column (6) in Table~\ref{tab:flm}), a one unit increase in sodium consumption is associated with a $2.18$ year increase in life expectancy (significant at 10\% level).
+The sign of $\beta_1$ and $\beta_2$, the coefficients corresponding to alcohol and smoking, are negative for both males and females, and the coefficient for alcohol is significant at the 1\% level.
+
+
+
 
 
 % Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Wed, Jun 22, 2016 - 08:45:11
+% Date and time: Wed, Jun 22, 2016 - 15:52:47
 \begin{table}[!htbp] \centering 
   \caption{Male, differenced regressions (2010-1990)} 
   \label{tab:mlm} 
@@ -587,7 +523,7 @@ For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ 
 \end{table} 
 
 % Table created by stargazer v.5.2 by Marek Hlavac, Harvard University. E-mail: hlavac at fas.harvard.edu
-% Date and time: Wed, Jun 22, 2016 - 08:45:11
+% Date and time: Wed, Jun 22, 2016 - 15:52:48
 \begin{table}[!htbp] \centering 
   \caption{Female, differenced regressions (2010-1990)} 
   \label{tab:flm} 
@@ -595,7 +531,7 @@ For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ 
 \\[-1.8ex]\hline 
 \hline \\[-1.8ex] 
 \\[-1.8ex] & \multicolumn{6}{c}{ } \\ 
- & OLS & Robust &  &  &  &  \\ 
+ & OLS & Robust & OLS & Robust & OLS & Robust \\ 
 \\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6)\\ 
 \hline \\[-1.8ex] 
  Na & 0.322 & 0.322 & 2.118$^{*}$ & 2.118$^{*}$ & 2.180$^{*}$ & 2.180$^{*}$ \\ 
@@ -654,15 +590,15 @@ For females (column (8) in Table~\ref{tab:flm}), it's associated with a $2.073$ 
 ##  [7] RColorBrewer_1.1-2  plyr_1.8.3          stringr_1.0.0      
 ## [10] MatrixModels_0.4-1  munsell_0.4.2       gtable_0.1.2       
 ## [13] bdsmatrix_1.3-2     codetools_0.2-14    evaluate_0.8       
-## [16] labeling_0.3        latticeExtra_0.6-26 SparseM_1.7        
-## [19] quantreg_5.19       pbkrtest_0.4-2      parallel_3.2.0     
-## [22] highr_0.5.1         proto_0.3-10        Rcpp_0.12.2        
-## [25] acepack_1.3-3.3     scales_0.3.0        formatR_1.2.1      
-## [28] lme4_1.1-10         gridExtra_2.0.0     digest_0.6.8       
-## [31] stringi_1.0-1       tools_3.2.0         magrittr_1.5       
-## [34] lazyeval_0.1.10     car_2.1-0           MASS_7.3-45        
-## [37] Matrix_1.2-2        assertthat_0.1      minqa_1.2.4        
-## [40] R6_2.1.1            nnet_7.3-11         nlme_3.1-122
+## [16] latticeExtra_0.6-26 SparseM_1.7         quantreg_5.19      
+## [19] pbkrtest_0.4-2      parallel_3.2.0      highr_0.5.1        
+## [22] proto_0.3-10        Rcpp_0.12.2         acepack_1.3-3.3    
+## [25] scales_0.3.0        formatR_1.2.1       lme4_1.1-10        
+## [28] gridExtra_2.0.0     digest_0.6.8        stringi_1.0-1      
+## [31] tools_3.2.0         magrittr_1.5        lazyeval_0.1.10    
+## [34] car_2.1-0           MASS_7.3-45         Matrix_1.2-2       
+## [37] assertthat_0.1      minqa_1.2.4         R6_2.1.1           
+## [40] nnet_7.3-11         nlme_3.1-122
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
