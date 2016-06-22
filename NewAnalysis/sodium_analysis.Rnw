@@ -258,10 +258,11 @@ Based on the tests using the generalized propensity score stratification, sodium
 The p-values for association are all above 10\% when considering the tests using prognostic score stratification.
 
 Figure~\ref{fig:do_corr_plots_f1} shows the results for females using the differenced data (2010-1990).
-No variable is significantly associated with life expectancy using either stratification method.
-\textcolor{red}{Sodium consumption has the smallest p-value, just above 10\% for both methods.
-Recall that for females, the correlation between sodium and life expectancy is actually positive; thus this result says that sodium has a nonsignificant association with \textit{increases} in life expectancy at age 30.
-}
+At the 5\% level, no variable is significantly associated with life expectancy using either stratification method.
+Based on prognostic score stratification, alcohol has a p-value less than 10\% and 
+based on generalized propensity score stratification, sodium has a p-value less than 10\%.
+Recall that for females, the correlation between sodium and life expectancy is actually positive; 
+thus this result says that sodium has a nonsignificant association with \textit{increases} in life expectancy at age 30.
 
 The p-values do not, in general, show close agreement between the two stratification methods.
 Stratification on the generalized propensity score tends to give smaller p-values than stratification on prognostic scores.

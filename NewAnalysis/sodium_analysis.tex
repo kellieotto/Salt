@@ -231,10 +231,11 @@ Based on the tests using the generalized propensity score stratification, sodium
 The p-values for association are all above 10\% when considering the tests using prognostic score stratification.
 
 Figure~\ref{fig:do_corr_plots_f1} shows the results for females using the differenced data (2010-1990).
-No variable is significantly associated with life expectancy using either stratification method.
-\textcolor{red}{Sodium consumption has the smallest p-value, just above 10\% for both methods.
-Recall that for females, the correlation between sodium and life expectancy is actually positive; thus this result says that sodium has a nonsignificant association with \textit{increases} in life expectancy at age 30.
-}
+At the 5\% level, no variable is significantly associated with life expectancy using either stratification method.
+Based on prognostic score stratification, alcohol has a p-value less than 10\% and 
+based on generalized propensity score stratification, sodium has a p-value less than 10\%.
+Recall that for females, the correlation between sodium and life expectancy is actually positive; 
+thus this result says that sodium has a nonsignificant association with \textit{increases} in life expectancy at age 30.
 
 The p-values do not, in general, show close agreement between the two stratification methods.
 Stratification on the generalized propensity score tends to give smaller p-values than stratification on prognostic scores.
@@ -252,7 +253,7 @@ This does not give evidence for the ``salt is bad'' hypothesis.
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 15:52:47 2016
+% Wed Jun 22 16:02:08 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -269,7 +270,7 @@ etoh &  & 0.42 & 0.14 \\
 \label{tab:gps_balance_m}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 15:52:47 2016
+% Wed Jun 22 16:02:08 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -295,7 +296,7 @@ etoh &  & 0.63 & 0.75 \\
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 15:52:47 2016
+% Wed Jun 22 16:02:08 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -312,7 +313,7 @@ etoh &  & 0.66 & 0.98 \\
 \label{tab:gps_balance_f}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 15:52:47 2016
+% Wed Jun 22 16:02:08 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -589,16 +590,16 @@ The sign of $\beta_1$ and $\beta_2$, the coefficients corresponding to alcohol a
 ##  [4] nloptr_1.0.4        foreign_0.8-66      DBI_0.3.1          
 ##  [7] RColorBrewer_1.1-2  plyr_1.8.3          stringr_1.0.0      
 ## [10] MatrixModels_0.4-1  munsell_0.4.2       gtable_0.1.2       
-## [13] bdsmatrix_1.3-2     codetools_0.2-14    evaluate_0.8       
-## [16] latticeExtra_0.6-26 SparseM_1.7         quantreg_5.19      
-## [19] pbkrtest_0.4-2      parallel_3.2.0      highr_0.5.1        
-## [22] proto_0.3-10        Rcpp_0.12.2         acepack_1.3-3.3    
-## [25] scales_0.3.0        formatR_1.2.1       lme4_1.1-10        
-## [28] gridExtra_2.0.0     digest_0.6.8        stringi_1.0-1      
-## [31] tools_3.2.0         magrittr_1.5        lazyeval_0.1.10    
-## [34] car_2.1-0           MASS_7.3-45         Matrix_1.2-2       
-## [37] assertthat_0.1      minqa_1.2.4         R6_2.1.1           
-## [40] nnet_7.3-11         nlme_3.1-122
+## [13] bdsmatrix_1.3-2     evaluate_0.8        latticeExtra_0.6-26
+## [16] SparseM_1.7         quantreg_5.19       pbkrtest_0.4-2     
+## [19] parallel_3.2.0      highr_0.5.1         proto_0.3-10       
+## [22] Rcpp_0.12.2         acepack_1.3-3.3     scales_0.3.0       
+## [25] formatR_1.2.1       lme4_1.1-10         gridExtra_2.0.0    
+## [28] digest_0.6.8        stringi_1.0-1       tools_3.2.0        
+## [31] magrittr_1.5        lazyeval_0.1.10     car_2.1-0          
+## [34] MASS_7.3-45         Matrix_1.2-2        assertthat_0.1     
+## [37] minqa_1.2.4         R6_2.1.1            nnet_7.3-11        
+## [40] nlme_3.1-122
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
