@@ -122,32 +122,35 @@ Then we use the proportion of alcohol consumption in 2010 attributable to males 
 
 \section{Correlations}
 \subsection{Raw Correlations}
-First, we report the raw correlations between life expectancy at age 30 and each of the predictors.
-This does not control for correlations between predictors.
-It is the crudest measure.
-Table~\ref{tab:raw_corr} shows these correlations.
-For alcohol, smoking, and per capita GDP, the sign of the correlations are consistent across all four cuts of the data and are consistent with our expectations.
-Sodium is negatively associated with life expectancy for males but positively associated for females.
 
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 08:44:37 2016
+% Wed Jul  6 12:21:40 2016
 \begin{table}[ht]
 \centering
-\begin{tabular}{r|rr|rr}
+\begin{tabular}{r|rrrr|rrrr}
    \hline
- & Male &  & Female &  \\ 
+ & Male &  &  &  & Female &  &  &  \\ 
    \hline
-   & Differenced & Cross-sectional & Differenced & Cross-sectional \\ 
+   & e0 & etoh & smoking & Na & e0 & etoh & smoking & Na \\ 
    \hline
-etoh & -0.73 & -0.36 & -0.55 & -0.01 \\ 
-  smoking & -0.41 & -0.11 & -0.2 & -0.14 \\ 
-  Na & -0.41 & -0.11 & 0.04 & 0.1 \\ 
+e0 & -- & -0.73 & -0.41 & -0.41 & -- & -0.55 & -0.20 & 0.04 \\ 
+  etoh &  & -- & 0.38 & 0.54 &  & -- & 0.37 & 0.38 \\ 
+  smoking &  &  & -- & 0.30 &  &  & -- & 0.30 \\ 
+  Na &  &  &  & -- &  &  &  & -- \\ 
    \hline
 \end{tabular}
-\caption{Raw correlations with life expectancy at age 30.} 
+\caption{Raw correlations between variables.} 
 \label{tab:raw_corr}
 \end{table}
 
+Table~\ref{tab:raw_corr} reports the raw correlations between change in life expectancy at age 30 and each of the differenced predictors in.
+The first row, \texttt{e0}, shows the correlation between predictors and the outcome.
+It is the crudest measure of association, as it does not control for correlations between predictors.
+For alcohol, smoking, and per capita GDP, the sign of the correlations are consistent for males and females, and are consistent with our expectations.
+Sodium is negatively associated with life expectancy for males but positively associated for females.
+The pairwise correlations between the predictors are all positive.
+The association between alcohol and sodium is stronger for males (0.54) 
+than for females (0.38).
 
 \subsection{Permutation Tests}
 We'd like to assess how significantly correlated each variable is with life expectancy, accounting for the other confounding variables.
@@ -220,7 +223,7 @@ That is, there should be no correlation between the treatment level and any of t
 To test this, we use the same stratified permutation test of correlation that we use to test the association between treatment and outcome, except here we apply it to treatment and each covariate.
 
 Tables~\ref{tab:gps_balance_m}--\ref{tab:prog_balance_f} show the results of these balance tests, for both male and female data and both balancing scores.
-For the most part, the stratification acheives balance: most of the p-values are large.
+For the most part, the stratification achieves balance: most of the p-values are large.
 However, when using the generalized propensity score to stratify and test for association between salt and life expectancy, the strata do not balance the covariates.
 The p-values for association between sodium consumption and alcohol and smoking are near or exactly zero for both males and females, and the p-value for per capita GDP is zero for males.
 Thus, the permutation tests based on this stratification method may not be valid and their results should be taken with a grain of salt (pun intended).
@@ -253,7 +256,7 @@ This does not give evidence for the ``salt is bad'' hypothesis.
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 16:02:08 2016
+% Wed Jul  6 12:22:09 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -270,7 +273,7 @@ etoh &  & 0.42 & 0.14 \\
 \label{tab:gps_balance_m}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 16:02:08 2016
+% Wed Jul  6 12:22:09 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -296,7 +299,7 @@ etoh &  & 0.63 & 0.75 \\
 
 \end{knitrout}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 16:02:08 2016
+% Wed Jul  6 12:22:09 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -313,7 +316,7 @@ etoh &  & 0.66 & 0.98 \\
 \label{tab:gps_balance_f}
 \end{table}
 % latex table generated in R 3.2.0 by xtable 1.8-0 package
-% Wed Jun 22 16:02:08 2016
+% Wed Jul  6 12:22:09 2016
 \begin{table}[ht]
 \centering
 \begin{tabular}{r|rrr}
@@ -427,7 +430,7 @@ The four models that we've considered here show similar patterns of variable imp
 
 }
 
-\caption[Variable importance measure from the 	exttt{randomForest} package]{Variable importance measure from the 	exttt{randomForest} package.}\label{fig:rf_variable_importance}
+\caption[Variable importance measure from the randomForest package]{Variable importance measure from the randomForest package.}\label{fig:rf_variable_importance}
 \end{figure}
 
 

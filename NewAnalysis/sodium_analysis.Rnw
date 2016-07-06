@@ -142,14 +142,8 @@ colnames(female_absolute) <- gsub("_F", "", colnames(female_absolute))
 @
 \section{Correlations}
 \subsection{Raw Correlations}
-First, we report the raw correlations between life expectancy at age 30 and each of the predictors.
-This does not control for correlations between predictors.
-It is the crudest measure.
-Table~\ref{tab:raw_corr} shows these correlations.
-For alcohol, smoking, and per capita GDP, the sign of the correlations are consistent across all four cuts of the data and are consistent with our expectations.
-Sodium is negatively associated with life expectancy for males but positively associated for females.
 
-<<raw_corr, echo=FALSE, results="asis", cache=TRUE>>=
+<<covariate_correlations, echo=FALSE, results="asis", cache=TRUE>>=
 
 compute_correlations <- function(outcome, variables){
   correlations <- rep(NA, ncol(variables))
@@ -160,21 +154,41 @@ compute_correlations <- function(outcome, variables){
   return(correlations)
 }
 
-m1 <- compute_correlations(male_diff$e0, male_diff %>% select(-e0))
-f1 <- compute_correlations(female_diff$e0, female_diff %>% select(-e0))
-m2 <- compute_correlations(male_absolute$e0, male_absolute %>% select(-e0, -country, -year))
-f2 <- compute_correlations(female_absolute$e0, female_absolute %>% select(-e0, -country, -year))
 
-corr_tab <- cbind(m1, m2, f1, f2)
-corr_tab <- rbind(c("Male", "", "Female", ""), rep(c("Differenced", "Cross-sectional"), 2), round(corr_tab, 2))
+mcorr <- male_diff %>% 
+  apply(., 2, function(x){compute_correlations(x, .)})
+mcorr <- format(round(mcorr, 2), nsmall = 2)
+mcorr <- gsub(" ", "", mcorr)
+diag(mcorr) <- "--"
+mcorr[lower.tri(mcorr)] <- ""
+
+fcorr <- female_diff %>% 
+  apply(., 2, function(x){compute_correlations(x, .)})
+fcorr <- format(round(fcorr, 2), nsmall = 2)
+fcorr <- gsub(" ", "", fcorr)
+diag(fcorr) <- "--"
+fcorr[lower.tri(fcorr)] <- ""
+
+corr_tab <- cbind(mcorr, fcorr)
+corr_tab <- rbind(c("Male", "", "", "", "Female", "", "", ""), 
+                  colnames(corr_tab),
+                  corr_tab)
 rownames(corr_tab)[1:2] <- c("", "  ")
-print(xtable(corr_tab, align = "r|rr|rr", 
-             caption = "Raw correlations with life expectancy at age 30.",
+print(xtable(corr_tab, align = "r|rrrr|rrrr", 
+             caption = "Raw correlations between variables.",
              label = "tab:raw_corr"),
       include.rownames = TRUE,
       include.colnames = FALSE,
       hline.after = c(0, 1, 2, nrow(corr_tab)))
 @
+Table~\ref{tab:raw_corr} reports the raw correlations between change in life expectancy at age 30 and each of the differenced predictors in.
+The first row, \texttt{e0}, shows the correlation between predictors and the outcome.
+It is the crudest measure of association, as it does not control for correlations between predictors.
+For alcohol, smoking, and per capita GDP, the sign of the correlations are consistent for males and females, and are consistent with our expectations.
+Sodium is negatively associated with life expectancy for males but positively associated for females.
+The pairwise correlations between the predictors are all positive.
+The association between alcohol and sodium is stronger for males (\Sexpr{mcorr[2,4]}) 
+than for females (\Sexpr{fcorr[2,4]}).
 
 \subsection{Permutation Tests}
 We'd like to assess how significantly correlated each variable is with life expectancy, accounting for the other confounding variables.
@@ -247,7 +261,7 @@ That is, there should be no correlation between the treatment level and any of t
 To test this, we use the same stratified permutation test of correlation that we use to test the association between treatment and outcome, except here we apply it to treatment and each covariate.
 
 Tables~\ref{tab:gps_balance_m}--\ref{tab:prog_balance_f} show the results of these balance tests, for both male and female data and both balancing scores.
-For the most part, the stratification acheives balance: most of the p-values are large.
+For the most part, the stratification achieves balance: most of the p-values are large.
 However, when using the generalized propensity score to stratify and test for association between salt and life expectancy, the strata do not balance the covariates.
 The p-values for association between sodium consumption and alcohol and smoking are near or exactly zero for both males and females, and the p-value for per capita GDP is zero for males.
 Thus, the permutation tests based on this stratification method may not be valid and their results should be taken with a grain of salt (pun intended).
@@ -568,7 +582,7 @@ Because the dataset is small and parts of the covariate space may be sparse, we 
 Furthermore, one must bear in mind that importance may depend on the choice of model.
 The four models that we've considered here show similar patterns of variable importance, giving us confidence in the relative magnitudes of each variable's predictive power.
 
-<<rf_variable_importance, fig.align = "center", fig.height = 6, fig.width = 12, cache=TRUE, fig.cap = "Variable importance measure from the \texttt{randomForest} package.">>=
+<<rf_variable_importance, fig.align = "center", fig.height = 6, fig.width = 12, cache=TRUE, fig.cap = "Variable importance measure from the randomForest package.">>=
 
 male_rf <- randomForest(e0~., male_diff, importance = TRUE)
 female_rf <- randomForest(e0~., female_diff, importance = TRUE)
